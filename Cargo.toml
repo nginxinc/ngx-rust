@@ -1,0 +1,20 @@
+[package]
+name = "ngx-rust"
+version = "1.11.13"
+authors = ["Sehyo Chang   sehyo@nginx.com"]
+
+[lib]
+doctest = false
+test = false
+crate-type = ["lib"]
+
+
+[dependencies]
+libc            = "0.2.26"
+
+
+
+[build-dependencies]
+bindgen = "0.26.3"
+
+
