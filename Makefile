@@ -4,11 +4,15 @@ MODULE_LIB=${MODULE_SRC}/nginx-${NGINX_VER}/objs/${MODULE_NAME}.so
 NGX_DEBUG="--with-debug"
 DARWIN_NGINX=nginx-darwin
 LINUX_NGINX=nginx-linux
-RUST_COMPILER_TAG = 0.1
-RUST_TOOL = gcr.io/$(GCLOUD_PROJECT)/ngx-mixer-dev:${RUST_COMPILER_TAG}
+RUST_COMPILER_TAG = 1.19.0
+RUST_TOOL = gcr.io/$(GCLOUD_PROJECT)/ngx-rust-tool:${RUST_COMPILER_TAG}
 export ROOT_DIR=${PWD}
 
-darwin-source:
+
+setup-nginx:
+	mkdir -p nginx
+
+darwin-source:	setup-nginx
 	wget http://nginx.org/download/nginx-${NGINX_VER}.tar.gz
 	tar zxf nginx-${NGINX_VER}.tar.gz
 	mv nginx-${NGINX_VER} ${DARWIN_NGINX}
@@ -26,7 +30,7 @@ lx-compiler:
 	docker run -it -v ${ROOT_DIR}:/src ${RUST_TOOL}  /bin/bash
 
 
-linux-source:
+linux-source:	setup-nginx
 	wget http://nginx.org/download/nginx-${NGINX_VER}.tar.gz
 	tar zxf nginx-${NGINX_VER}.tar.gz
 	mv nginx-${NGINX_VER} ${LINUX_NGINX}
@@ -34,8 +38,16 @@ linux-source:
 	rm nginx-${NGINX_VER}.tar.gz*
 
 
+# this run inside container
+docker-linux-configure:
+	cd nginx/${LINUX_NGINX}; \
+    ./configure --add-dynamic-module=../../module
+
+
+
 lx-configure:
 	docker run -it -v ${ROOT_DIR}:/src -w /src/ ${RUST_TOOL} make docker-linux-configure
+
 
 
 linux-setup:    linux-source lx-configure
@@ -45,10 +57,8 @@ lx-build:
 	docker run -it -v ${ROOT_DIR}:/src -w /src/ ${RUST_TOOL} cargo build
 
 
-# this run inside container
-docker-linux-configure:
-	cd nginx/${LINUX_NGINX}; \
-    ./configure --add-dynamic-module=../../module
+lx-shell:
+	docker run -it -v ${ROOT_DIR}:/src -w /src/ ${RUST_TOOL} /bin/bash
 
 
 
