@@ -1,30 +1,40 @@
-# Nginx Mixer Module
+# Rust Nginx Rust wrapper
 
-## Development Set up for Mac
+## Install Rust
 
+Follow instruction here to install rust tooling
 
-### Install Rust 1.18.0
+https://www.rust-lang.org/en-US/install.html
 
-Current rust version 1.19.0 has issue with linking in Mac.  Use 1.18.0 until this issue is sorted out.
+## Configure Rust module
 
-First install rust at:  https://www.rust-lang.org/en-US/install.html
+For specific target OS, this project need to be configured in order to compiler other modules which are depend on this project.  
+The project configured to support multiple OS.
 
-Then switch to Rust 1.18.0:
+This will generate 'nginx' directory which contains configured version of nginx for each of the OS.
 
-`rustup install 1.18.0
-rustup default 1.18.0`
+### For Linux development
 
-### Install CLang for bindgen
+If you want to target your module to run on linux, please perform one-time setup.  This will download nginx source and configure to compile on linux.
 
-Install Clang at: https://rust-lang-nursery.github.io/rust-bindgen/requirements.html
+```bash
+make linux-setup
+```
 
+### For Mac development
 
-### set up source
-make darwin-source
+```bash
+make darwin-setup
+```
 
+## Clean configuration
 
-### build 
-cargo build
+This will remove existing configuration
+
+```bash
+make super_clean
+```
+ 
 
 
 
