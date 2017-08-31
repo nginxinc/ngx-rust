@@ -4,8 +4,6 @@ extern crate libc;
 
 use std::str;
 use std::slice;
-use std::ffi::CString;
-
 
 use bindings::ngx_http_request_s;
 use bindings::ngx_http_headers_in_t;
@@ -15,6 +13,7 @@ use bindings::ngx_table_elt_t;
 use bindings::ngx_list_t;
 use bindings::ngx_uint_t;
 use bindings::ngx_str_t;
+use bindings::ngx_log_t;
 use bindings::ngx_log_error_core;
 use bindings::NGX_LOG_ERR;
 use bindings::ngx_cycle;
@@ -162,11 +161,33 @@ impl Iterator for NgxListIterator  {
 
 }
 
-// log message
-pub fn log(message: &str)  {
 
+// log message
+pub fn log(message: &str) {
     unsafe {
-          ngx_log_error_core(NGX_LOG_ERR as usize, (*ngx_cycle).log, 0, message.as_ptr() as *const ::std::os::raw::c_char,message.len());
+        ngx_log_error_core(NGX_LOG_ERR as usize, (*ngx_cycle).log, 0, message.as_ptr() as *const ::std::os::raw::c_char, message.len());
     }
-     
 }
+
+    // log with format
+/*
+macro_rules! ngx_log_format {
+    () => { println!("hello world");
+}
+*/
+
+
+
+
+    /*
+    #define ngx_log_error(level, log, ...)                                        \
+    if ((log)->log_level >= level) ngx_log_error_core(level, log, __VA_ARGS__)
+
+void ngx_log_error_core(ngx_uint_t level, ngx_log_t *log, ngx_err_t err,
+    const char *fmt, ...);
+    */
+
+    /*
+     log(&format!("target uid founded!"));
+     */
+

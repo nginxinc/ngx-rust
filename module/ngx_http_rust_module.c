@@ -19,12 +19,9 @@
  * @brief element mixer configuration
  */
 typedef struct {
+    ngx_str_t name;              /**< test name */
+} ngx_http_rust_main_conf_t;
 
-} ngx_http_mixer_main_conf_t;
-
-
-static ngx_int_t ngx_http_rust_filter(ngx_http_request_t *r);
-static ngx_int_t ngx_http_rust_filter_init(ngx_conf_t *cf);
 
 
 static void *ngx_http_rust_create_main_conf(ngx_conf_t *cf);
@@ -37,9 +34,9 @@ static ngx_command_t ngx_http_rust_commands[] = {
     {
       ngx_string("rust"), /* dummy directive */
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,  // server takes 1 //
-      NULL, /* configuration setup function */
-      NULL,
-      NULL,
+      ngx_conf_set_str_slot, /* configuration setup function */
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_rust_main_conf_t, name),
       NULL
     },
     ngx_null_command /* command termination */
@@ -68,7 +65,7 @@ ngx_module_t ngx_http_rust_module = {
     NGX_HTTP_MODULE, /* module type */
     NULL, /* init master */
     NULL, /* init module */
-    mixer_init, /* init process */
+    NULL, /* init process */
     NULL, /* init thread */
     NULL, /* exit thread */
     NULL, /* exit process */
@@ -80,16 +77,16 @@ ngx_module_t ngx_http_rust_module = {
 
 static void *ngx_http_rust_create_main_conf(ngx_conf_t *cf)
 {
-  ngx_http_mixer_main_conf_t *conf;
+  ngx_http_rust_main_conf_t *conf;
 
   ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "setting up main config");
 
 
-  conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_mixer_main_conf_t));
+  conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_rust_main_conf_t));
   if (conf == NULL) {
     return NULL;
   }
 
-  conf->mixer_port = NGX_CONF_UNSET_UINT;
+
   return conf;
 }

@@ -25,6 +25,12 @@ darwin-configure:
 
 darwin-setup:   darwin-source darwin-configure
 
+# build module locally in mac
+
+darwin-module:
+	cd nginx/${DARWIN_NGINX}; \
+	make modules;
+
 # need to run inside container
 lx-compiler:
 	docker run -it -v ${ROOT_DIR}:/src ${RUST_TOOL}  /bin/bash

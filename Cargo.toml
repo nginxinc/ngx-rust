@@ -5,16 +5,16 @@ authors = ["Sehyo Chang   sehyo@nginx.com"]
 
 [lib]
 doctest = false
-test = false
-crate-type = ["lib"]
+test = true
+crate-type = ["staticlib","rlib"]
 
 
 [dependencies]
-libc            = "0.2.26"
+libc = "0.2.29"
 
 
 
 [build-dependencies]
-bindgen = "0.26.3"
+bindgen = "0.30.0"
 
 
