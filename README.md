@@ -1,6 +1,8 @@
-# Rust Nginx Rust wrapper
+# Rust Wrapper for Nginx
 
-## Install Rust
+Please follow steps
+
+## Install Rust tooling
 
 Follow instruction here to install rust tooling
 
@@ -8,8 +10,7 @@ https://www.rust-lang.org/en-US/install.html
 
 ## Configure Rust module
 
-For specific target OS, this project need to be configured in order to compiler other modules which are depend on this project.  
-The project configured to support multiple OS.
+This project need to be configured for specific OS in order to build other module which depends on this module.
 
 This will generate 'nginx' directory which contains configured version of nginx for each of the OS.
 
@@ -29,8 +30,7 @@ make darwin-setup
 
 ## Clean configuration
 
-This will remove existing configuration
-
+This will remove all Rust artifacts as well generated NGINX build artifacts
 ```bash
 make super_clean
 ```
