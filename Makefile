@@ -9,6 +9,17 @@ RUST_TOOL = gcr.io/$(GCLOUD_PROJECT)/ngx-rust-tool:${RUST_COMPILER_TAG}
 export ROOT_DIR=${PWD}
 
 
+
+darwin-build-nginx:
+	cd nginx/${DARWIN_NGINX}; \
+	./configure --prefix=${PWD}/nginx/install; \
+	make; \
+	make install
+
+
+darwin-install-nginx:   darwin-source darwin-configure
+
+
 setup-nginx:
 	mkdir -p nginx
 
