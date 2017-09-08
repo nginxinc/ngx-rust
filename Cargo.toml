@@ -12,7 +12,10 @@ crate-type = ["staticlib","rlib"]
 [dependencies]
 libc = "0.2.29"
 
-
+[dev-dependencies]
+futures = "0.1.14"
+hyper = "0.11.2"
+tokio-core = "0.1.9"
 
 [build-dependencies]
 bindgen = "0.30.0"
