@@ -39,6 +39,10 @@ fn configure() -> Result<Output> {
     make("darwin-setup")
 }
 
+#[cfg(target_os = "linux")]
+fn configure() -> Result<Output> {
+    make("docker-linux-configure")
+}
 
 
 #[cfg(target_os = "linux")]
