@@ -5,7 +5,7 @@ NGX_DEBUG="--with-debug"
 DARWIN_NGINX=nginx-darwin
 LINUX_NGINX=nginx-linux
 RUST_COMPILER_TAG = 1.19.0
-RUST_TOOL = gcr.io/$(GCLOUD_PROJECT)/ngx-rust-tool:${RUST_COMPILER_TAG}
+RUST_TOOL = nginmesh/ngx-rust-tool:${RUST_COMPILER_TAG}
 export ROOT_DIR=${PWD}
 
 

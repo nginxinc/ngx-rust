@@ -1,7 +1,4 @@
 
-extern crate libc;
-
-
 use std::str;
 use std::slice;
 
