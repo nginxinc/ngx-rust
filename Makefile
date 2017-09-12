@@ -17,9 +17,6 @@ darwin-build-nginx:
 	make install
 
 
-darwin-install-nginx:   darwin-source darwin-configure
-
-
 setup-nginx:
 	mkdir -p nginx
 
@@ -35,6 +32,8 @@ darwin-configure:
     ./configure --add-dynamic-module=../../module
 
 darwin-setup:   darwin-source darwin-configure
+
+darwin-test:	darwin-source darwin-build-nginx darwin-configure
 
 # build module locally in mac
 

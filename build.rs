@@ -36,7 +36,7 @@ fn make(arg: &str) -> Result<Output> {
 
 #[cfg(target_os = "macos")]
 fn configure() -> Result<Output> {
-    make("darwin-setup")
+    make("darwin-test")
 }
 
 #[cfg(target_os = "linux")]
