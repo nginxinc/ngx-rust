@@ -41,7 +41,7 @@ fn configure() -> Result<Output> {
 
 #[cfg(target_os = "linux")]
 fn configure() -> Result<Output> {
-    make("docker-linux-configure")
+    make("docker-linux-setup")
 }
 
 

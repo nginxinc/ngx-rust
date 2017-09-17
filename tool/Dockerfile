@@ -2,7 +2,7 @@ FROM ubuntu:16.04
 
 MAINTAINER Sehyo Chang "sehyo@nginx.com"
 
-ENV RUST_VERSION=1.19.0
+ENV RUST_VERSION=1.20.0
 
 # install nginx required libraries
 
