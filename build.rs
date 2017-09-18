@@ -8,6 +8,9 @@ use std::io::Result;
 #[cfg(target_os = "macos")]
 const NGIX_DIR: &str  = "./nginx/nginx-darwin";
 
+#[cfg(target_os = "linux")]
+const NGIX_DIR: &str  = "./nginx/nginx-linux";
+
 // perform make with argument
 fn make(arg: &str) -> Result<Output> {
     let current_path = env::current_dir().unwrap();
@@ -36,17 +39,16 @@ fn make(arg: &str) -> Result<Output> {
 
 #[cfg(target_os = "macos")]
 fn configure() -> Result<Output> {
-    make("darwin-test")
+    make("nginx-test")
 }
 
 #[cfg(target_os = "linux")]
 fn configure() -> Result<Output> {
-    make("docker-linux-setup")
+    make("nginx-setup")
 }
 
 
-#[cfg(target_os = "linux")]
-const NGIX_DIR: &str  = "./nginx/nginx-linux";
+
 
 fn generate_binding() {
     let bindings = bindgen::Builder::default()

@@ -1,18 +1,32 @@
 NGINX_VER = 1.11.13
+UNAME_S := $(shell uname -s)
+NGX_MODULES = --with-compat  --with-threads --with-http_addition_module \
+     --with-http_auth_request_module   --with-http_gunzip_module --with-http_gzip_static_module  \
+     --with-http_random_index_module --with-http_realip_module --with-http_secure_link_module \
+     --with-http_slice_module  --with-http_stub_status_module --with-http_sub_module \
+     --with-stream --with-stream_realip_module --with-stream_ssl_preread_module
+
+ifeq ($(UNAME_S),Linux)
+    NGINX_SRC += nginx-linux
+    NGX_OPT= $(NGX_MODULES) \
+       --with-file-aio --with-http_ssl_module --with-stream_ssl_module  \
+       --with-cc-opt='-g -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC' \
+       --with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie'
+endif
+ifeq ($(UNAME_S),Darwin)
+    NGINX_SRC += nginx-darwin
+    NGX_OPT= $(NGX_MODULES)
+endif
 MODULE_NAME=ngx_rust
 MODULE_LIB=${MODULE_SRC}/nginx-${NGINX_VER}/objs/${MODULE_NAME}.so
 NGX_DEBUG="--with-debug"
-DARWIN_NGINX=nginx-darwin
-LINUX_NGINX=nginx-linux
 RUST_COMPILER_TAG = 1.20.0
 RUST_TOOL = nginmesh/ngx-rust-tool:${RUST_COMPILER_TAG}
 export ROOT_DIR=${PWD}
 
-
-
-darwin-build-nginx:
-	cd nginx/${DARWIN_NGINX}; \
-	./configure --prefix=${PWD}/nginx/install; \
+nginx-build:
+	cd nginx/${NGINX_SRC}; \
+	./configure --prefix=${PWD}/nginx/install $(NGX_OPT); \
 	make; \
 	make install
 
@@ -20,74 +34,41 @@ darwin-build-nginx:
 setup-nginx:
 	mkdir -p nginx
 
-darwin-source:	setup-nginx
+nginx-source:	setup-nginx
+	rm -rf nginx/${NGINX_SRC}
 	wget http://nginx.org/download/nginx-${NGINX_VER}.tar.gz
 	tar zxf nginx-${NGINX_VER}.tar.gz
-	mv nginx-${NGINX_VER} ${DARWIN_NGINX}
-	mv ${DARWIN_NGINX} nginx
+	mv nginx-${NGINX_VER} ${NGINX_SRC}
+	mv ${NGINX_SRC} nginx
 	rm nginx-${NGINX_VER}.tar.gz*
 
-darwin-configure:
-	cd nginx/${DARWIN_NGINX}; \
-    ./configure --add-dynamic-module=../../module
+nginx-configure:
+	cd nginx/${NGINX_SRC}; \
+    ./configure --add-dynamic-module=../../module $(NGX_OPT)
 
-darwin-setup:   darwin-source darwin-configure
 
-darwin-test:	darwin-source darwin-build-nginx darwin-configure
+nginx-setup:	nginx-source nginx-configure
 
-# build module locally in mac
+nginx-test:	nginx-source nginx-build
 
-darwin-module:
-	cd nginx/${DARWIN_NGINX}; \
+
+nginx-module:
+	cd nginx/${NGINX_SRC}; \
 	make modules;
 
 # need to run inside container
-lx-compiler:
+linux-shell:
 	docker run -it -v ${ROOT_DIR}:/src ${RUST_TOOL}  /bin/bash
 
-
-linux-source:	setup-nginx
-	wget http://nginx.org/download/nginx-${NGINX_VER}.tar.gz
-	tar zxf nginx-${NGINX_VER}.tar.gz
-	mv nginx-${NGINX_VER} ${LINUX_NGINX}
-	mv ${LINUX_NGINX} nginx
-	rm nginx-${NGINX_VER}.tar.gz*
-
-
-# this run inside docker
-docker-linux-configure:
-	cd nginx/${LINUX_NGINX}; \
-	./configure --add-dynamic-module=../../module  \
-	    --with-compat --with-file-aio --with-threads --with-http_addition_module \
-	    --with-http_auth_request_module --with-http_dav_module --with-http_flv_module \
-	    --with-http_gunzip_module --with-http_gzip_static_module --with-http_mp4_module \
-	    --with-http_random_index_module --with-http_realip_module --with-http_secure_link_module \
-	    --with-http_slice_module --with-http_ssl_module --with-http_stub_status_module \
-	    --with-http_sub_module --with-mail --with-mail_ssl_module \
-	    --with-stream --with-stream_realip_module --with-stream_ssl_module --with-stream_ssl_preread_module \
-	    --with-cc-opt='-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC' \
-	    --with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie'
-
-
-
-# this run inside docker
-docker-linux-setup:	linux-source docker-linux-configure
-
-
-lx-configure:
-	docker run -it -v ${ROOT_DIR}:/src -w /src/ ${RUST_TOOL} make docker-linux-configure
-
-
-
-linux-setup:    linux-source lx-configure
-
-
-lx-build:
+cargo:
 	docker run -it -v ${ROOT_DIR}:/src -w /src/ ${RUST_TOOL} cargo build
 
+linux-setup:
+	docker run -it -v ${ROOT_DIR}:/src -w /src/ ${RUST_TOOL} make nginx-setup
 
-lx-shell:
-	docker run -it -v ${ROOT_DIR}:/src -w /src/ ${RUST_TOOL} /bin/bash
+
+linux-module:
+	docker run -it -v ${ROOT_DIR}:/src -w /src/ ${RUST_TOOL} make nginx-module
 
 
 
