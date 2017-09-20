@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM nginx:1.13.5
 
 MAINTAINER Sehyo Chang "sehyo@nginx.com"
 
@@ -9,7 +9,7 @@ ENV RUST_VERSION=1.20.0
 RUN apt-get update
 
 # install dev en
-RUN apt-get install autoconf automake libtool curl make wget  unzip -y
+RUN apt-get install autoconf automake libtool curl make wget  unzip gnupg -y
 
 # essential c compiler toolchain includes automake
 #n RUN apt-get install build-essential -y
@@ -25,13 +25,8 @@ RUN apt-get install llvm-3.9-dev libclang-3.9-dev clang-3.9 -y
 RUN sed -i 's:# define IPPORT_RESERVED:// #define IPPORT_RESERVED:' /usr/include/netdb.h
 
 # install PCRE library
-RUN apt-get install libpcre3 libpcre3-dev -y
+RUN apt-get install libpcre3 libpcre3-dev zlib1g-dev libssl-dev -y
 
-# install zlib
-RUN apt-get install zlib1g-dev -y
-
-# install SSL dev
-RUN apt-get install libssl-dev -y
 
 # install rust
 RUN curl -sO https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init && \
@@ -53,4 +48,8 @@ RUN curl -OL https://github.com/google/protobuf/releases/download/v3.3.0/protoc-
 RUN unzip protoc-3.3.0-linux-x86_64.zip -d protoc3
 RUN mv protoc3/bin/* /usr/local/bin/
 
-CMD ["/bin/bash"]
+
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
+    apt-get install -y nodejs
+
+RUN apt-get install procps -y
