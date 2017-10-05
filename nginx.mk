@@ -7,14 +7,14 @@ NGX_MODULES = --with-compat  --with-threads --with-http_addition_module \
      --with-stream --with-stream_realip_module --with-stream_ssl_preread_module
 
 ifeq ($(UNAME_S),Linux)
-    NGINX_SRC += nginx-linux
+    NGINX_SRC = nginx-linux
     NGX_OPT= $(NGX_MODULES) \
        --with-file-aio --with-http_ssl_module --with-stream_ssl_module  \
        --with-cc-opt='-g -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC' \
        --with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie'
 endif
 ifeq ($(UNAME_S),Darwin)
-    NGINX_SRC += nginx-darwin
+    NGINX_SRC = nginx-darwin
     NGX_OPT= $(NGX_MODULES)
 endif
 NGX_DEBUG="--with-debug"

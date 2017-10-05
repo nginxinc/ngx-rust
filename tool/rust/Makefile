@@ -1,5 +1,5 @@
 
-TAG = 1.20.0
+TAG = 1.20.0-C
 NAME = nginmesh/ngx-rust-tool
 
 

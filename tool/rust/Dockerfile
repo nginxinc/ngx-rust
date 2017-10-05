@@ -1,4 +1,4 @@
-FROM nginx:1.13.5
+FROM ubuntu:16.04
 
 MAINTAINER Sehyo Chang "sehyo@nginx.com"
 
@@ -9,7 +9,7 @@ ENV RUST_VERSION=1.20.0
 RUN apt-get update
 
 # install dev en
-RUN apt-get install autoconf automake libtool curl make wget  unzip gnupg -y
+RUN apt-get install vim autoconf automake libtool curl make wget  unzip gnupg -y
 
 # essential c compiler toolchain includes automake
 #n RUN apt-get install build-essential -y
@@ -47,11 +47,4 @@ ENV PATH $PATH:/root/.cargo/bin
 RUN curl -OL https://github.com/google/protobuf/releases/download/v3.3.0/protoc-3.3.0-linux-x86_64.zip
 RUN unzip protoc-3.3.0-linux-x86_64.zip -d protoc3
 RUN mv protoc3/bin/* /usr/local/bin/
-
-
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - && \
-    apt-get install -y nodejs
-
-RUN apt-get install vim netcat net-tools procps -y
-
-RUN apt-get update && apt-get install -y iptables
+RUN rm protoc-3.3.0-linux-x86_64.zip

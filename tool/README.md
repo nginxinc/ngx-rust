@@ -1,5 +1,3 @@
-# Docker image to compile nginx rust module.
+# Tools to compile and run rust based modules
 
-It contains rust tools chain and protobuf compiler
 
-'make build;push'
