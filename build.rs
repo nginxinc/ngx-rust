@@ -36,13 +36,6 @@ fn make(arg: &str) -> Result<Output> {
 }
 
 
-
-#[cfg(target_os = "macos")]
-fn configure() -> Result<Output> {
-    make("nginx-test")
-}
-
-#[cfg(target_os = "linux")]
 fn configure() -> Result<Output> {
     make("nginx-setup")
 }
