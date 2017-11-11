@@ -1,40 +1,29 @@
-# Rust Wrapper for Nginx
+# ngx-rust
 
-Please follow steps
+Module development kit for Nginx using Rust
 
-## Install Rust tooling
+## Requirement
 
-Follow instruction here to install rust tooling
+this crate use bazel to install nginx source and generate bindings.  Please follow https://docs.bazel.build/versions/master/install.html.
 
-https://www.rust-lang.org/en-US/install.html
+## Usage
 
-## Configure Rust module
+First, add this to your 'Cargo.toml';
 
-This project need to be configured for specific OS in order to build other module which depends on this module.
-
-This will generate 'nginx' directory which contains configured version of nginx for each of the OS.
-
-### For Linux development
-
-If you want to target your module to run on linux, please perform one-time setup.  This will download nginx source and configure to compile on linux.
-
-```bash
-make linux-setup
+```toml
+[dependencies]
+ngix-rust = "0.1"
 ```
 
-### For Mac development
+Next, add this to your crate:
 
-```bash
-make darwin-setup
+```rust
+extern crate ngx-rust;
 ```
 
-## Clean configuration
+## Limitation
 
-This will remove all Rust artifacts as well generated NGINX build artifacts
-```bash
-make super_clean
-```
- 
+Currently only Darwin (Mac OSX) and Linux platform are supported
 
 
 
