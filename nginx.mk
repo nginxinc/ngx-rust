@@ -18,7 +18,7 @@ ifeq ($(UNAME_S),Darwin)
     NGX_OPT= $(NGX_MODULES)
 endif
 NGX_DEBUG="--with-debug"
-RUST_COMPILER_TAG = 1.20.0
+RUST_COMPILER_TAG = 1.21.0
 RUST_TOOL = nginmesh/ngx-rust-tool:${RUST_COMPILER_TAG}
 export ROOT_DIR=$(shell dirname $$PWD)
 DOCKER_TOOL=docker run -it -v ${ROOT_DIR}:/src -w /src/${MODULE_PROJ_NAME} ${RUST_TOOL}
@@ -44,7 +44,7 @@ nginx-source:	setup-nginx
 
 nginx-configure:
 	cd nginx/${NGINX_SRC}; \
-    ./configure --add-dynamic-module=../../module $(NGX_OPT)
+    ./configure $(NGX_OPT)
 
 
 nginx-setup:	nginx-source nginx-configure
