@@ -1,18 +1,18 @@
 # ngx-rust
 
-Module development kit for Nginx using Rust
+Module development kit for Nginx using Rust.  This crates does 2 things:
 
-## Requirement
+(1) Generates C bindings for using Nginx inside Rust module.
+(2) Provide limited high level wrapper for Nginx C interface.
 
-this crate use bazel to install nginx source and generate bindings.  Please follow https://docs.bazel.build/versions/master/install.html.
 
-## Usage
+## Getting Started
 
-First, add this to your 'Cargo.toml';
+Add the following dependency to your Cargo manifest...
 
 ```toml
 [dependencies]
-ngix-rust = "0.1"
+ngix-rust = "0.1.1"
 ```
 
 Next, add this to your crate:
@@ -21,10 +21,8 @@ Next, add this to your crate:
 extern crate ngx-rust;
 ```
 
+
 ## Limitation
 
 Currently only Darwin (Mac OSX) and Linux platform are supported
-
-
-
 
