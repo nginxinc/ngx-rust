@@ -157,34 +157,3 @@ impl Iterator for NgxListIterator  {
     }
 
 }
-
-
-// log message
-pub fn log(message: &str) {
-    unsafe {
-        ngx_log_error_core(NGX_LOG_ERR as usize, (*ngx_cycle).log, 0, message.as_ptr() as *const ::std::os::raw::c_char, message.len());
-    }
-}
-
-    // log with format
-/*
-macro_rules! ngx_log_format {
-    () => { println!("hello world");
-}
-*/
-
-
-
-
-    /*
-    #define ngx_log_error(level, log, ...)                                        \
-    if ((log)->log_level >= level) ngx_log_error_core(level, log, __VA_ARGS__)
-
-void ngx_log_error_core(ngx_uint_t level, ngx_log_t *log, ngx_err_t err,
-    const char *fmt, ...);
-    */
-
-    /*
-     log(&format!("target uid founded!"));
-     */
-
