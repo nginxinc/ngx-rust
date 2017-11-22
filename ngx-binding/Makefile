@@ -17,18 +17,6 @@ ifeq ($(UNAME_S),Darwin)
     NGINX_SRC = nginx-darwin
     NGX_OPT= $(NGX_MODULES)
 endif
-NGX_DEBUG="--with-debug"
-RUST_COMPILER_TAG = 1.21.0
-RUST_TOOL = nginmesh/ngx-rust-tool:${RUST_COMPILER_TAG}
-export ROOT_DIR=$(shell dirname $$PWD)
-DOCKER_TOOL=docker run -it -v ${ROOT_DIR}:/src -w /src/${MODULE_PROJ_NAME} ${RUST_TOOL}
-
-
-nginx-build:
-	cd nginx/${NGINX_SRC}; \
-	./configure --prefix=${PWD}/nginx/install $(NGX_OPT); \
-	make; \
-	make install
 
 
 setup-nginx:
@@ -49,22 +37,12 @@ nginx-configure:
 
 nginx-setup:	nginx-source nginx-configure
 
-nginx-test:	nginx-source nginx-build
-
 
 nginx-module:
 	cd nginx/${NGINX_SRC}; \
 	make modules;
 
-# need to run inside container
-linux-shell:
-	${DOCKER_TOOL} /bin/bash
 
-
-
-linux-setup:
-	${DOCKER_TOOL} make nginx-setup
-
-linux-module:
-	${DOCKER_TOOL} make nginx-module
-
+clean:
+	rm -rf nginx
+	rm -f src/bindings.rs
