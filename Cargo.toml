@@ -1,20 +1,4 @@
-[package]
-name = "ngx-rust"
-version = "0.1.2"
-authors = ["Sehyo Chang   sehyo@nginx.com"]
-
-[lib]
-doctest = false
-test = true
-crate-type = ["staticlib","rlib"]
-
-
-[dev-dependencies]
-futures = "0.1.14"
-hyper = "0.11.2"
-tokio-core = "0.1.9"
-
-[build-dependencies]
-bindgen = "0.30.0"
-
-
+[workspace]
+members = [
+    "ngx-binding"
+]

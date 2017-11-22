@@ -6,7 +6,7 @@ include nginx.mk
 
 clean:
 	cargo clean
-	rm -f src/bindings.rs
+	make -C ngx-binding clean
 
 
 super_clean: clean
