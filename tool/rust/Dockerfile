@@ -9,7 +9,7 @@ ENV RUST_VERSION=1.21.0
 RUN apt-get update
 
 # install dev en
-RUN apt-get install vim autoconf automake libtool curl make wget  unzip gnupg binutils -y
+RUN apt-get install vim autoconf automake libtool curl make wget  unzip gnupg binutils pkg-config -y
 
 # essential c compiler toolchain includes automake
 #n RUN apt-get install build-essential -y
