@@ -1,8 +1,7 @@
 FROM ubuntu:16.04
+ARG RUST_VERSION=1.25.0
 
 MAINTAINER Sehyo Chang "sehyo@nginx.com"
-
-ENV RUST_VERSION=1.21.0
 
 # install nginx required libraries
 
@@ -49,9 +48,3 @@ RUN unzip protoc-3.3.0-linux-x86_64.zip -d protoc3
 RUN mv protoc3/bin/* /usr/local/bin/
 RUN rm protoc-3.3.0-linux-x86_64.zip
 
-# install bazel
-RUN apt-get update; apt-get install -y openjdk-8-jdk
-RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
-RUN curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
-RUN apt-get update && apt-get install -y bazel
-RUN bazel version

@@ -1,4 +1,6 @@
-# Docker image to compile nginx rust module.
+# Purpose
+
+Base image used for building rust based NGINX module.
 
 It contains rust tools chain and protobuf compiler
 
