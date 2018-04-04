@@ -5,11 +5,7 @@ use std::process::Output;
 use std::env;
 use std::io::Result;
 
-#[cfg(target_os = "macos")]
-const NGIX_DIR: &str  = "./nginx/nginx-darwin";
-
-#[cfg(target_os = "linux")]
-const NGIX_DIR: &str  = "./nginx/nginx-linux";
+const NGIX_DIR: &str  = "./nginx/";
 
 // perform make with argument
 fn make(arg: &str) -> Result<Output> {
@@ -37,7 +33,7 @@ fn make(arg: &str) -> Result<Output> {
 
 
 fn configure() -> Result<Output> {
-    make("nginx-setup")
+    make("configure")
 }
 
 

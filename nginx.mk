@@ -1,4 +1,3 @@
-NGINX_VER = 1.13.7
 UNAME_S := $(shell uname -s)
 NGX_MODULES = --with-compat  --with-threads --with-http_addition_module \
      --with-http_auth_request_module   --with-http_gunzip_module --with-http_gzip_static_module  \

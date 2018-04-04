@@ -1,4 +1,5 @@
 [workspace]
 members = [
-    "ngx-binding"
+    "ngx-binding",
+    "ngx-sys"
 ]

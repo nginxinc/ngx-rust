@@ -1,0 +1,3 @@
+[submodule "ngx-sys/nginx"]
+	path = ngx-sys/nginx
+	url = https://github.com/nginx/nginx.git
