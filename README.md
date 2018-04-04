@@ -21,6 +21,8 @@ Next, add this to your crate:
 extern crate ngx-rust;
 ```
 
+## to ensure bindings are formatted, run following cmd
+```rustup component add rustfmt-preview```
 
 ## Limitation
 
