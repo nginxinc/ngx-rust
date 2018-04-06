@@ -161,13 +161,6 @@ dependencies = [
 name = "ngx-rust"
 version = "0.2.0"
 dependencies = [
- "ngx-sys 0.2.0",
-]
-
-[[package]]
-name = "ngx-sys"
-version = "0.2.0"
-dependencies = [
  "bindgen 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

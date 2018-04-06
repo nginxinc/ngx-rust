@@ -1,0 +1,3 @@
+[submodule "ngx-binding/nginx"]
+	path = ngx-binding/nginx
+	url = https://github.com/nginx/nginx.git
