@@ -1,5 +1,5 @@
 [package]
-name = "ngx-rust"
+name = "ngx-binding"
 version = "0.2.0"
 authors = ["Sehyo Chang   sehyo@nginx.com"]
 
