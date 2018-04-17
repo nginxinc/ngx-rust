@@ -175,6 +175,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ngx_test_suite"
+version = "0.2.0"
+dependencies = [
+ "ngx-binding 0.2.0",
+ "ngx-module 0.2.0",
+]
+
+[[package]]
 name = "nom"
 version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

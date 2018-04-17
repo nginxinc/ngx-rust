@@ -1,14 +1,11 @@
 [package]
-name = "ngx-module"
+name = "ngx_test_suite"
 version = "0.2.0"
 authors = ["Sehyo Chang   sehyo@nginx.com"]
 
-[lib]
-proc-macro = true
 
 [dependencies]
 ngx-binding   =  { path = "../ngx-binding" , version = "0.2.0" }
-proc-macro2 = "0.3.6"
-quote = "0.5.1"
-syn = { version = "0.13.1", features = ["visit"] }
+ngx-module   =  { path = "../ngx-module" , version = "0.2.0" }
+
 

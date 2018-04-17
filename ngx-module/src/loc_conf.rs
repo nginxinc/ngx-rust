@@ -2,9 +2,7 @@
 use syn::DeriveInput;
 use syn::Data;
 use syn::Fields;
-use syn::Field;
 use syn::Ident;
-use syn::punctuated;
 use quote::Tokens;
 
 pub fn expand_loc_conf(input: &DeriveInput) -> Result<Tokens,String>  {
@@ -14,7 +12,12 @@ pub fn expand_loc_conf(input: &DeriveInput) -> Result<Tokens,String>  {
         Data::Union(_) => panic!("doesn't work with unions yet"),
         Data::Enum(ref e) => panic!("doesn't work with enums yet")
     };
-    Ok(result)
+    let expanded = quote! {
+        fn test()  {
+            #result
+        }
+    };
+    Ok(expanded)
 }
 
 fn handle_loc_struct(ast: &DeriveInput,
@@ -24,41 +27,20 @@ fn handle_loc_struct(ast: &DeriveInput,
     match *fields {
         Fields::Named(ref fields) => {
             
-            directive(&ast, Some(&fields.named), true, variant)
+            //directive(&ast, Some(&fields.named), true, variant)
+             let fnames = fields.named.iter().map(|f| f.ident);
+             quote! {
+                0 # (
+                    let #fnames = 2;
+                )*
+             }
         },
         Fields::Unit => {
-            directive(&ast, None, false, variant)
+            quote!(0)
         },
         Fields::Unnamed(ref fields) => {
-            directive(&ast, Some(&fields.unnamed), false, variant)
+            quote!(0)
         },
     }
 }
-
-fn directive(ast: &DeriveInput,
-            fields: Option<&punctuated::Punctuated<Field, Token![,]>>,
-            named: bool, variant: Option<&Ident>) -> Tokens
-{
-    let name = &ast.ident;
-    quote! {
-        printf!("field name: {}",name)
-    }
-}
-
-/*
-#[cfg(test)]
-mod tests {
-
-    
-    #[repr(C)]
-    #[NgxLocConf]
-    pub struct test_loca_conf_t {
-        #[loc_conf(name="topic")]
-        pub topic: ngx_str_t,
-        pub destination_service: ngx_str_t
-    }
-
-    
-}
-*/
 
