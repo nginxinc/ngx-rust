@@ -17,6 +17,7 @@ pub fn expand_loc_conf(input: &DeriveInput) -> Result<Tokens,String>  {
             #result
         }
     };
+    println!("macro: {}", expanded);
     Ok(expanded)
 }
 
@@ -30,7 +31,7 @@ fn handle_loc_struct(ast: &DeriveInput,
             //directive(&ast, Some(&fields.named), true, variant)
              let fnames = fields.named.iter().map(|f| f.ident);
              quote! {
-                0 # (
+                # (
                     let #fnames = 2;
                 )*
              }

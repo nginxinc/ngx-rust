@@ -2,7 +2,7 @@
 extern crate ngx_module;
 extern crate ngx_binding;
 
-use ngx_binding::ngx_str_t;
+use ngx_binding::bindings::ngx_str_t;
 
 #[repr(C)]
 #[derive(NgxLocConf)]
