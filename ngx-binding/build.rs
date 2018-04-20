@@ -3,10 +3,9 @@ extern crate bindgen;
 use std::process::Command;
 use std::process::Output;
 use std::env;
+use std::path::PathBuf;
 use std::io::Result;
 use std::vec::Vec;
-
-const NGIX_DIR: &str  = "./nginx/";
 
 // return all nginx features
 fn ngix_features() -> Vec<&'static str> {
@@ -83,10 +82,44 @@ fn ngix_features() -> Vec<&'static str> {
     
 }
 
-fn configure() -> Result<Output> {
+// nginx source directory
+fn nginx_dir() -> String  {
+    let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    format!("{}/nginx",out_dir.display())
+}
+
+
+
+// copy nginx to out directory
+fn copy_nginx() -> Result<Output> {
     let current_path = env::current_dir().unwrap();
-    let path_name = format!("{}/nginx",current_path.display());
-    println!("executing make command at {}",path_name);
+    let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let dest_str = dst.to_str().unwrap();
+    let mut args: Vec<&str> = vec!["-r","nginx",dest_str];
+    let result =  Command::new("cp")
+        .args(&args)
+        .current_dir(env::current_dir().unwrap())
+        .output();
+
+    println!("copying nginx to: {}",dest_str);
+    match result  {
+        Err(e)  =>  {
+            return Err(e);
+        },
+
+        Ok(output) => {
+            println!("status: {}", output.status);
+            println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+            println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+            return Ok(output);
+        }
+    }
+        
+}
+
+fn configure() -> Result<Output> {
+    let nginx_path_name = nginx_dir();
+    println!("nginx auto config at {}",nginx_path_name);
     let mut args: Vec<&str> = Vec::new();
     args.push("auto/configure");
     
@@ -98,7 +131,7 @@ fn configure() -> Result<Output> {
         
     let result =  Command::new("bash")
         .args(&args)
-        .current_dir(path_name)
+        .current_dir(nginx_path_name)
         .output();
 
     match result  {
@@ -122,19 +155,20 @@ fn configure() -> Result<Output> {
 
 
 fn generate_binding() {
+    let nginx_path_name = nginx_dir();
     let builder = bindgen::Builder::default()
     // The input header we would like to generate
     // bindings for.
     .header("wrapper.h")
     .layout_tests(false)
     .rustfmt_bindings(true)
-    .clang_arg(format!("-I{}/src/core",NGIX_DIR))
-    .clang_arg(format!("-I{}/src/event",NGIX_DIR))
-    .clang_arg(format!("-I{}/src/event/modules",NGIX_DIR))
-    .clang_arg(format!("-I{}/src/os/unix",NGIX_DIR))
-    .clang_arg(format!("-I{}/objs",NGIX_DIR))
-    .clang_arg(format!("-I{}/src/http",NGIX_DIR))
-    .clang_arg(format!("-I{}/src/http/modules",NGIX_DIR))
+    .clang_arg(format!("-I{}/src/core",nginx_path_name))
+    .clang_arg(format!("-I{}/src/event",nginx_path_name))
+    .clang_arg(format!("-I{}/src/event/modules",nginx_path_name))
+    .clang_arg(format!("-I{}/src/os/unix",nginx_path_name))
+    .clang_arg(format!("-I{}/objs",nginx_path_name))
+    .clang_arg(format!("-I{}/src/http",nginx_path_name))
+    .clang_arg(format!("-I{}/src/http/modules",nginx_path_name))
     // Finish the builder and generate the bindings.
     .generate()
     // Unwrap the Result and panic on failure.
@@ -147,7 +181,8 @@ fn generate_binding() {
 
 fn main() {
 
-    configure();
-    generate_binding();
+    copy_nginx();
+   // configure();
+   // generate_binding();
 
 }
