@@ -13,9 +13,11 @@ pub fn expand_loc_conf(input: &DeriveInput) -> Result<Tokens,String>  {
         Data::Enum(ref e) => panic!("doesn't work with enums yet")
     };
     let expanded = quote! {
-        fn test()  {
-            #result
+    
+        pub extern fn ngx_http_create_loc_conf(conf: &ngx_conf_t)  {
+            #result    
         }
+
     };
     println!("macro: {}", expanded);
     Ok(expanded)
