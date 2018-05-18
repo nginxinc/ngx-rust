@@ -1,5 +1,5 @@
 FROM ubuntu:16.04
-ARG RUST_VERSION=1.25.0
+ARG RUST_VERSION=1.26.0
 
 MAINTAINER Sehyo Chang "sehyo@nginx.com"
 
