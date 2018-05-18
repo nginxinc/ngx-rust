@@ -182,7 +182,7 @@ fn generate_binding() {
 fn main() {
 
     copy_nginx();
-   // configure();
-   // generate_binding();
+    configure();
+    generate_binding();
 
 }

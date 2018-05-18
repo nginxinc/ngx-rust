@@ -1,5 +1,5 @@
 [package]
-name = "ngx-binding"
+name = "ngx-sys"
 version = "0.2.0"
 authors = ["Sehyo Chang   sehyo@nginx.com"]
 
