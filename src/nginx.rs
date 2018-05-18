@@ -74,7 +74,7 @@ impl Nginx  {
     // intentinally ignore failure in stop
     pub fn restart(&mut self) -> Result<Output> {
 
-        self.stop();
+        self.stop()?;
         self.start()
     }
 

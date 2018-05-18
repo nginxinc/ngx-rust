@@ -1,3 +1,41 @@
+[package]
+name = "ngx-rs"
+version = "0.2.0"
+authors = ["Sehyo Chang <sehyo@nginx.com>"]
+
+
+[features]
+default = ["with-compat","with-threads","with-http_addition_module","with-http_auth_request_module",
+"with-http_gunzip_module","with-http_gzip_static_module","with-http_random_index_module",
+"with-http_realip_module","with-http_secure_link_module","with-http_slice_module",
+"with-http_stub_status_module","with-http_sub_module","with-stream","with-stream_realip_module",
+"with-stream_ssl_preread_module","with-file-aio","with-http_ssl_module","with-stream_ssl_module"
+]
+
+with-compat=["ngx-sys/with-compat"]
+with-threads=["ngx-sys/with-threads"]
+with-http_addition_module=["ngx-sys/with-http_addition_module"]
+with-http_auth_request_module=["ngx-sys/with-http_auth_request_module"]
+with-http_gunzip_module=["ngx-sys/with-http_gunzip_module"]
+with-http_gzip_static_module=["ngx-sys/with-http_gzip_static_module"]
+with-http_random_index_module=["ngx-sys/with-http_random_index_module"]
+with-http_realip_module=["ngx-sys/with-http_realip_module"]
+with-http_secure_link_module=["ngx-sys/with-http_secure_link_module"]
+with-http_slice_module=["ngx-sys/with-http_slice_module"]
+with-http_stub_status_module=["ngx-sys/with-http_stub_status_module"]
+with-http_sub_module=["ngx-sys/with-http_sub_module"]
+with-stream=["ngx-sys/with-stream"]
+with-stream_realip_module=["ngx-sys/with-stream_realip_module"]
+with-stream_ssl_preread_module=["ngx-sys/with-stream_ssl_preread_module"]
+with-file-aio=["ngx-sys/with-file-aio"]
+with-http_ssl_module=["ngx-sys/with-http_ssl_module"]
+with-stream_ssl_module=["ngx-sys/with-http_ssl_module"]
+
+
+[dependencies]
+ngx-sys = { path = "ngx-sys", version = "0.2.0"}
+
+
 [workspace]
 members = [
     "ngx-sys",

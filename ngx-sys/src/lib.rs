@@ -1,9 +1,7 @@
-pub mod bindings;
+mod bindings;
+mod http;
+mod string;
 
 pub use bindings::*;
-
-pub mod nginx_http;
-pub mod nginx;
-pub mod log;
 
 

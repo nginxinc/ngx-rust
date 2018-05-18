@@ -168,6 +168,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ngx-rs"
+version = "0.2.0"
+dependencies = [
+ "ngx-sys 0.2.0",
+]
+
+[[package]]
 name = "ngx-sys"
 version = "0.2.0"
 dependencies = [
