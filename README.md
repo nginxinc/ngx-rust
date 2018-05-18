@@ -12,7 +12,7 @@ Add the following dependency to your Cargo manifest...
 
 ```toml
 [dependencies]
-ngix-rust = "0.1.1"
+ngix-rust = "0.2"
 ```
 
 Next, add this to your crate:
@@ -21,8 +21,7 @@ Next, add this to your crate:
 extern crate ngx-rust;
 ```
 
-## to ensure bindings are formatted, run following cmd
-```rustup component add rustfmt-preview```
+[TBD]
 
 ## Limitation
 
