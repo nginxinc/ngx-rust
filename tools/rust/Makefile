@@ -1,6 +1,6 @@
 
 TAG = 1.26.0
-NAME = nginmesh/ngx-rust-tool
+NAME = nginxinc/ngx-rust-tool
 
 
 all:    build push
