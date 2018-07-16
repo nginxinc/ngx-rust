@@ -1,10 +1,12 @@
-# ngx-rust
+# Rust for NGINX
 
-Module development kit for Nginx using Rust.  This crates does 2 things:
+Rust bindings and wrappers for NGINX.  Can be used for building dynamic modules and hacking NGINX using rust.
 
-(1) Generates C bindings for using Nginx inside Rust module.
-(2) Provide limited high level wrapper for Nginx C interface.
+## Production Status
 
+This version is proof of concept.  It has enough binding for building modules for [nginmesh](https://github.com/nginxinc/nginmesh).  
+
+You still need to write C stub code to build the complete module.  Please wait for next version which will remove this restriction.
 
 ## Getting Started
 
@@ -21,8 +23,20 @@ Next, add this to your crate:
 extern crate ngx_rust;
 ```
 
+## Building module Example
+
+Please see [istio mixer module](https://github.com/nginxinc/ngx-istio-mixer) for full example.
+Currently, it requires much machinery to build the module. 
+
+## Roadmap
+
+Please see [roadmap](https://github.com/nginxinc/ngx-rust/wiki) for future plans.  
+
+
 
 ## Limitation
 
-Currently only Darwin (Mac OSX) and Linux platform are supported
+Only supports these platforms:
+- Darwin (Mac OSX)
+- Linux platform
 
