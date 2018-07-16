@@ -1,5 +1,5 @@
 [package]
-name = "ngx-rust"
+name = "ngx_rust"
 version = "0.1.2"
 authors = ["Sehyo Chang   sehyo@nginx.com"]
 

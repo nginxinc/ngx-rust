@@ -12,13 +12,13 @@ Add the following dependency to your Cargo manifest...
 
 ```toml
 [dependencies]
-ngix-rust = "0.1.1"
+ngx_rust = "0.1.1"
 ```
 
 Next, add this to your crate:
 
 ```rust
-extern crate ngx-rust;
+extern crate ngx_rust;
 ```
 
 
