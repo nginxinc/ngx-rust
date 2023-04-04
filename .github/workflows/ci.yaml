@@ -1,0 +1,128 @@
+name: Rust
+
+on: [ push, pull_request ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-linux:
+    name: Test (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout source
+        uses: actions/checkout@v3
+      - name: set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            .cache/cargo/registry/index/
+            .cache/cargo/registry/cache/
+            .cache/cargo/git/db/
+          key: ${{ runner.os }}-cargo
+          restore-keys: ${{ runner.os }}-cargo
+      - name: set up nginx source binary cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            .cache/.gnupg
+            .cache/*.tar.gz
+            .cache/*.tar.asc
+            .cache/*.tar.sig
+          key: nginx-${{ hashFiles('**/nginx-sys/build.rs') }}
+          restore-keys: nginx-
+      - name: run tests in container
+        run: make container-test
+
+  test-macos:
+    name: Test (MacOS)
+    runs-on: macos-latest
+    steps:
+      - name: install GNU make 4
+        run: brew install make openssl
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo
+          restore-keys: ${{ runner.os }}-cargo
+      - name: set up nginx source binary cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            .cache/.gnupg
+            .cache/*.tar.gz
+            .cache/*.tar.asc
+            .cache/*.tar.sig
+          key: nginx-${{ hashFiles('**/nginx-sys/build.rs') }}
+          restore-keys: nginx-
+      - name: run tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+#  clippy:
+#    name: Clippy
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: actions-rs/toolchain@v1
+#        with:
+#          profile: minimal
+#          toolchain: stable
+#          override: true
+#      - run: rustup component add clippy
+#      - uses: actions-rs/cargo@v1
+#        with:
+#          command: clippy
+#          args: -- -D warnings
+
+#  docs:
+#    name: Docs
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v3
+#      - name: Install Rust
+#        uses: actions-rs/toolchain@v1
+#        with:
+#          toolchain: stable
+#          profile: minimal
+#          override: true
+#      - name: Check documentation
+#        env:
+#          RUSTDOCFLAGS: -D warnings
+#        uses: actions-rs/cargo@v1
+#        with:
+#          command: doc
+#          args: --no-deps --document-private-items

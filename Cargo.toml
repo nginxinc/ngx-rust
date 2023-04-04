@@ -1,4 +1,25 @@
 [workspace]
 members = [
-    "ngx-binding"
+    "nginx-sys",
+    "examples",
 ]
+
+[package]
+name = "ngx"
+version = "0.3.0-beta"
+edition = "2021"
+autoexamples = false
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nginx-sys = { path = "nginx-sys"}
+
+[build-dependencies]
+bindgen = "0.64.0"
+which = "4.4.0"
+duct = "0.13.6"
+ureq = { version = "2.6.2", features = ["tls"] }
+flate2 = "1.0.25"
+tar = "0.4.38"

@@ -1,0 +1,16 @@
+FROM rust:slim-bullseye
+
+RUN set -eux \
+    export DEBIAN_FRONTEND=noninteractive; \
+    apt-get -qq update; \
+    apt-get -qq install --yes --no-install-recommends --no-install-suggests \
+        libclang-dev \
+        libssl-dev \
+        pkg-config \
+        git \
+        grep \
+        gawk \
+        gnupg2 \
+        sed \
+        make; \
+    git config --global --add safe.directory /project
