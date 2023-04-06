@@ -273,6 +273,7 @@ impl Request {
     pub fn subrequest(
         &self,
         uri: &str,
+        flags: u32,
         module: &ngx_module_t,
         post_callback: unsafe extern "C" fn(*mut ngx_http_request_t, *mut c_void, ngx_int_t) -> ngx_int_t,
     ) -> Status {
@@ -297,7 +298,7 @@ impl Request {
                 std::ptr::null_mut(),
                 &mut psr as *mut _,
                 sub_ptr as *mut _,
-                NGX_HTTP_SUBREQUEST_WAITED as _,
+                flags as _,
             )
         };
 
