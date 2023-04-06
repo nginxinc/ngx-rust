@@ -265,6 +265,12 @@ impl Request {
         Status::NGX_DONE
     }
 
+    /// how many subrequests deep is this request?
+    /// will return 0 for a parent request.
+    pub fn subrequest_depth(&self) -> u32 {
+        NGX_HTTP_MAX_SUBREQUESTS - self.0.subrequests()
+    }
+
     /// Send a subrequest
     pub fn subrequest(
         &self,
