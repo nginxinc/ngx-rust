@@ -270,9 +270,9 @@ impl Request {
     }
 
     /// how many subrequests deep is this request?
-    /// will return 0 for a parent request.
-    pub fn subrequest_depth(&self) -> u32 {
-        NGX_HTTP_MAX_SUBREQUESTS - self.0.subrequests()
+    /// will return NGX_HTTP_MAX_SUBREQUESTS for a parent request.
+    pub fn subrequests_available(&self) -> u32 {
+        self.0.subrequests()
     }
 
     /// Send a subrequest
