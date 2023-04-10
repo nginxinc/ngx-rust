@@ -269,10 +269,15 @@ impl Request {
         Status::NGX_DONE
     }
 
-    /// how many subrequests deep is this request?
+    /// how many subrequests are available to make in this request
     /// will return NGX_HTTP_MAX_SUBREQUESTS for a parent request.
     pub fn subrequests_available(&self) -> u32 {
-        self.0.subrequests()
+        // 1 is subtracted because this function was caught returning 1 extra
+        // The return value should be (50, 0), with the parent request returning
+        // NGX_HTTP_MAX_SUBREQUESTS.
+        // See http://nginx.org/en/docs/dev/development_guide.html#http_subrequests
+        // for more information
+        self.0.subrequests() - 1
     }
 
     /// Send a subrequest
