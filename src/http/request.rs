@@ -317,14 +317,8 @@ impl Request {
             )
         };
 
-        // previously call of ngx_http_subrequest() would ensure that the pointer is not null anymore
-        let mut sr = unsafe { &mut *psr };
-
-        /*
-         * allocate fake request body to avoid attempts to read it and to make
-         * sure real body file (if already read) won't be closed by upstream
-         */
-        sr.request_body = self.pool().alloc(std::mem::size_of::<ngx_http_request_body_t>()) as *mut _;
+        // ngx_http_subrequest() ensures that the pointer is no longer null
+        let sr = unsafe { &mut *psr };
 
         if sr.request_body.is_null() {
             return Status::NGX_ERROR;
