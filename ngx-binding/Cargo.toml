@@ -11,7 +11,7 @@ crate-type = ["staticlib","rlib"]
 
 [dev-dependencies]
 futures = "0.1.14"
-hyper = "0.11.2"
+hyper = "0.14.25"
 tokio-core = "0.1.9"
 
 [build-dependencies]
