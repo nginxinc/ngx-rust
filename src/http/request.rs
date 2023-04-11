@@ -313,13 +313,6 @@ impl Request {
             )
         };
 
-        // ngx_http_subrequest() ensures that the pointer is no longer null
-        let sr = unsafe { &mut *psr };
-
-        if sr.request_body.is_null() {
-            return Status::NGX_ERROR;
-        }
-        sr.set_header_only(1 as _);
         Status(r)
     }
 
