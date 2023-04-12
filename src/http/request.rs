@@ -192,8 +192,8 @@ impl Request {
         self.0.headers_out.status_line = status_line;
     }
 
-    pub fn get_status_line(&mut self) -> &NgxStr {
-        unsafe {NgxStr::from_ngx_str(self.0.headers_out.status_line)}
+    pub fn get_status_line(&mut self) -> ngx_str_t {
+        self.0.headers_out.status_line.clone()
     }
 
     pub fn get_status(&self) -> HTTPStatus {
@@ -295,6 +295,7 @@ impl Request {
         uri: &str,
         flags: u32,
         module: &ngx_module_t,
+        data: Option<*mut c_void>,
         post_callback: unsafe extern "C" fn(*mut ngx_http_request_t, *mut c_void, ngx_int_t) -> ngx_int_t,
     ) -> Status {
         let uri_ptr = &mut ngx_str_t::from_str(self.0.pool, uri) as *mut _;
@@ -306,7 +307,12 @@ impl Request {
         let post_subreq = sub_ptr as *const ngx_http_post_subrequest_t as *mut ngx_http_post_subrequest_t;
         unsafe {
             (*post_subreq).handler = Some(post_callback);
-            (*post_subreq).data = self.get_module_ctx_ptr(module); // WARN: safety! ensure that ctx is already set
+            if let Some(datum) = data {
+                (*post_subreq).data = datum;
+            } else {
+                // WARN: safety! ensure that ctx is already set
+                (*post_subreq).data = self.get_module_ctx_ptr(module);
+            }
         }
         // -------------
 
