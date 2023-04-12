@@ -187,6 +187,15 @@ impl Request {
         self.0.headers_out.status = status.into();
     }
 
+    /// Set HTTP Status Line of response
+    pub fn set_status_line(&mut self, status_line: ngx_str_t) {
+        self.0.headers_out.status_line = status_line;
+    }
+
+    pub fn get_status_line(&mut self) -> &NgxStr {
+        unsafe {NgxStr::from_ngx_str(self.0.headers_out.status_line)}
+    }
+
     pub fn get_status(&self) -> HTTPStatus {
         HTTPStatus(self.0.headers_out.status)
     }
