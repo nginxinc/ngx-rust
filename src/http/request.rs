@@ -186,22 +186,12 @@ impl Request {
         unsafe { NgxStr::from_ngx_str((*self.0.headers_in.user_agent).value) }
     }
 
-    /// Set HTTP status of response.
-    pub fn set_status(&mut self, status: HTTPStatus) {
-        self.0.headers_out.status = status.into();
-    }
-
-    /// Set HTTP Status Line of response
-    pub fn set_status_line(&mut self, status_line: ngx_str_t) {
-        self.0.headers_out.status_line = status_line;
-    }
-
-    pub fn get_status_line(&mut self) -> ngx_str_t {
-        self.0.headers_out.status_line.clone()
-    }
-
     pub fn get_status(&self) -> HTTPStatus {
         HTTPStatus(self.0.headers_out.status)
+    }
+
+    pub fn get_headers_out(&self) -> *mut ngx_http_headers_out_t {
+        &self.0.headers_out as *const _ as *mut _
     }
 
     pub fn add_header_in(&mut self, key: &str, value: &str) -> Option<()> {
