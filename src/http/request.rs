@@ -190,8 +190,10 @@ impl Request {
         HTTPStatus(self.0.headers_out.status)
     }
 
-    pub fn get_headers_out(&self) -> *mut ngx_http_headers_out_t {
-        &self.0.headers_out as *const _ as *mut _
+    pub fn increment_cycle_count(&mut self) {
+        self.0.set_count(
+            self.0.count() + 1
+        );
     }
 
     pub fn add_header_in(&mut self, key: &str, value: &str) -> Option<()> {
