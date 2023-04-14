@@ -2,6 +2,7 @@ mod buffer;
 mod pool;
 mod status;
 mod string;
+mod event;
 
 pub use buffer::*;
 pub use pool::*;
