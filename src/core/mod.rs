@@ -8,6 +8,7 @@ pub use buffer::*;
 pub use pool::*;
 pub use status::*;
 pub use string::*;
+pub use event::*;
 
 /// Static empty configuration directive initializer for [`ngx_command_t`].
 ///
