@@ -6,7 +6,7 @@ pub struct Event(pub ngx_event_t);
 impl Event {
     pub fn add_timer(&mut self, timer: ngx_msec_t) {
         let key: ngx_msec_int_t = unsafe {ngx_current_msec as isize + timer as isize};
-        if self.0.timer_set() == 0 {
+        if self.0.timer_set() != 0 {
             /* FROM NGX:
              * Use a previous timer value if difference between it and a new
              * value is less than NGX_TIMER_LAZY_DELAY milliseconds: this allows
@@ -44,7 +44,7 @@ impl Event {
         self.0.set_timer_set(0);
     }
 
-    pub unsafe fn new_for_request<'a>(req: &'a mut crate::http::Request) -> &'a mut Event {
+    pub unsafe fn new_for_request(req: &crate::http::Request) -> &mut Event {
         &mut *(req.pool().alloc(std::mem::size_of::<ngx_event_t>()) as *mut Event)
     }
 }
@@ -55,3 +55,8 @@ impl From<*mut ngx_event_t> for &mut Event {
     }
 }
 
+impl Into<*mut ngx_event_t> for &mut Event {
+    fn into(self) -> *mut ngx_event_t {
+        &mut self.0 as *mut ngx_event_t
+    }
+}
