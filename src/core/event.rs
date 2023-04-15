@@ -1,7 +1,8 @@
 use crate::ffi::*;
 
 #[repr(transparent)]
-pub struct Event(ngx_event_t);
+pub struct Event(pub ngx_event_t);
+
 impl Event {
     pub fn add_timer(&mut self, timer: ngx_msec_t) {
         let key: ngx_msec_int_t = unsafe {ngx_current_msec as isize + timer as isize};
@@ -41,6 +42,10 @@ impl Event {
         }
 
         self.0.set_timer_set(0);
+    }
+
+    pub unsafe fn new_for_request<'a>(req: &'a mut crate::http::Request) -> &'a mut Event {
+        &mut *(req.pool().alloc(std::mem::size_of::<ngx_event_t>()) as *mut Event)
     }
 }
 
