@@ -44,6 +44,20 @@ impl Event {
         self.0.set_timer_set(0);
     }
 
+    /// translated from ngx_post_event macro
+    pub fn post_to_queue(&mut self, queue: *mut ngx_queue_t) {
+        if self.0.posted() == 0{
+            self.0.set_posted(1);
+            unsafe {
+                // translated from ngx_queue_insert_tail macro
+                self.0.queue.prev = (*queue).prev;
+                (*self.0.queue.prev).next = &self.0.queue as *const _ as *mut _;
+                self.0.queue.next = queue;
+                (*queue).prev = &self.0.queue as *const _ as *mut _;
+            }
+        }
+    }
+
     pub unsafe fn new_for_request(req: &crate::http::Request) -> &mut Event {
         &mut *(req.pool().alloc(std::mem::size_of::<ngx_event_t>()) as *mut Event)
     }
