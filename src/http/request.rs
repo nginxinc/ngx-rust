@@ -39,7 +39,7 @@ macro_rules! http_subrequest_handler {
 ///
 /// The set handler allows setting the property referenced by the variable.
 /// The set handler expects a [`Request`], [`mut ngx_variable_valut_t`], and a [`usize`].
-/// Variables: https://nginx.org/en/docs/dev/development_guide.html#http_variables
+/// Variables: <https://nginx.org/en/docs/dev/development_guide.html#http_variables>
 #[macro_export]
 macro_rules! http_variable_set {
     ( $name: ident, $handler: expr ) => {
@@ -59,7 +59,7 @@ macro_rules! http_variable_set {
 /// The get handler is responsible for evaluating a variable in the context of a specific request.
 /// Variable evaluators accept a [`Request`] input argument and two output
 /// arguments: [`ngx_http_variable_valut_t`] and [`usize`].
-/// Variables: https://nginx.org/en/docs/dev/development_guide.html#http_variables
+/// Variables: <https://nginx.org/en/docs/dev/development_guide.html#http_variables>
 #[macro_export]
 macro_rules! http_variable_get {
     ( $name: ident, $handler: expr ) => {
@@ -75,6 +75,7 @@ macro_rules! http_variable_get {
     };
 }
 
+/// Wrapper struct for an `ngx_http_request_t` pointer, , providing methods for working with HTTP requests.
 #[repr(transparent)]
 pub struct Request(ngx_http_request_t);
 
@@ -110,6 +111,9 @@ impl Request {
         self.0.connection
     }
 
+    /// Pointer to a [`ngx_log_t`].
+    ///
+    /// [`ngx_log_t`]: https://nginx.org/en/docs/dev/development_guide.html#logging
     pub fn log(&self) -> *mut ngx_log_t {
         unsafe { (*self.connection()).log }
     }

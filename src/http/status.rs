@@ -3,6 +3,7 @@ use crate::ffi::*;
 use std::error::Error;
 use std::fmt;
 
+/// Represents an HTTP status code.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HTTPStatus(pub ngx_uint_t);
 
