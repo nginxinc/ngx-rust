@@ -1,3 +1,38 @@
+//! Bindings to NGINX
+//! This project provides Rust SDK interfaces to the [NGINX](https://nginx.com) proxy allowing the creation of NGINX
+//! dynamic modules completely in Rust.
+//!
+//! ## Build
+//!
+//! NGINX modules can be built against a particular version of NGINX. The following environment variables can be used
+//! to specify a particular version of NGINX or an NGINX dependency:
+//!
+//! * `ZLIB_VERSION` (default 1.2.13) -
+//! * `PCRE2_VERSION` (default 10.42)
+//! * `OPENSSL_VERSION` (default 3.0.7)
+//! * `NGX_VERSION` (default 1.23.3) - NGINX OSS version
+//! * `NGX_DEBUG` (default to false)-  if set to true, then will compile NGINX `--with-debug` option
+//!
+//! For example, this is how you would compile the [examples](https://github.com/nginxinc/ngx-rust/tree/master/examples) using a specific version of NGINX and enabling
+//! debugging: `NGX_DEBUG=true NGX_VERSION=1.23.0 cargo build --package=examples --examples --release`
+//!
+//! To build Linux-only modules, use the "linux" feature: `cargo build --package=examples --examples --features=linux --release`
+//!
+//! After compilation, the modules can be found in the path `target/release/examples/` ( with the `.so` file extension for
+//! Linux or `.dylib` for MacOS).
+//!
+//! Additionally, the folder  `.cache/nginx/{NGX_VERSION}/{OS}/` will contain the compiled version of NGINX used to build
+//! the SDK. You can start NGINX directly from this directory if you want to test the module or add it to `$PATH`
+//! ```not_rust
+//! $ export NGX_VERSION=1.23.3
+//! $ cargo build --package=examples --examples --features=linux --release
+//! $ export PATH=$PATH:`pwd`/.cache/nginx/$NGX_VERSION/macos-x86_64/sbin
+//! $ nginx -V
+//! $ ls -la ./target/release/examples/
+//! # now you can use dynamic modules with the NGINX
+//! ```
+
+#![warn(missing_docs)]
 pub mod core;
 pub mod ffi;
 pub mod http;

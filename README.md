@@ -12,8 +12,7 @@ In short, this SDK allows writing NGINX modules using the Rust language.
 
 ## Build
 
-NGINX modules can be build against a particular version of NGINX. The following environment variables can be used to
-specify particular version of NGINX or an NGINX dependency:
+NGINX modules can be built against a particular version of NGINX. The following environment variables can be used to specify a particular version of NGINX or an NGINX dependency:
 
 * `ZLIB_VERSION` (default 1.2.13) -
 * `PCRE2_VERSION` (default 10.42)

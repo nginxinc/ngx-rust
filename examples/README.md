@@ -1,14 +1,65 @@
+- [Examples](#examples)
+  - [CURL](#curl)
+  - [AWSSIG](#awssig)
+  - [HTTPORIGDST  - NGINX Destination IP recovery module for HTTP](#httporigdst----nginx-destination-ip-recovery-module-for-http)
+    - [Dependencies](#dependencies)
+    - [Example Configuration](#example-configuration)
+      - [HTTP](#http)
+    - [Embedded Variables](#embedded-variables)
+    - [Usage](#usage)
+    - [Caveats](#caveats)
+
+
 # Examples
+This crate provides a couple of example using [ngx](https://crates.io/crates/ngx) crate:
 
-## NGINX Destination IP recovery module for HTTP
+- [awssig.rs](./awssig.rs) - An example of NGINX dynamic module that can sign GET request using AWS Signature v4.
+- [curl](./curl.rs) - An example of the Access Phase NGINX dynamic module that blocks HTTP requests if `user-agent` header starts with `curl`.
+- [httporigdst](./httporigdst.rs) - A dynamic module recovers the original IP address and port number of the destination packet.
 
-This dynamic module recovers original IP address and port number of the destination packet. It is useful, for example, with container sidecars where all outgoing traffic is redirected to a separate container with iptables before reaching the target.
+To build all these examples simply run:
+
+```
+cargo build --package=examples --examples
+```
+
+
+## CURL
+
+This module demonstrates how to create a minimal dynamic module with `http_request_handler`, that checks for User-Agent headers and returns status code 403 if UA starts with `curl`, if a module is disabled then uses `core::Status::NGX_DECLINED` to indicate the operation is rejected, for example, because it is disabled in the configuration (`curl off`). Additionally, it demonstrates how to write a defective parser.
+
+An example of nginx configuration file that uses that module can be found at [curl.conf](./curl.conf).
+
+How to build and run in a [Docker](../Dockerfile) container curl example:
+```
+# build all dynamic modules examples and specify NGINX version to use
+docker buildx build --build-arg NGX_VERSION=1.23.3 -t ngx-rust .
+
+# start NGINX using curl.conf module example:
+docker run --rm -d  -p 8000:8000 ngx-rust nginx -c examples/curl.conf
+
+# test it - you should see 403 Forbidden
+curl http://127.0.0.1:8000 -v -H "user-agent: curl"
+
+
+# test it - you should see 404 Not Found
+curl http://127.0.0.1:8000 -v -H "user-agent: foo"
+```
+
+## AWSSIG
+
+This module uses [NGX_HTTP_PRECONTENT_PHASE](https://nginx.org/en/docs/dev/development_guide.html#http_phases) and provides examples, of how to use external dependency and manipulate HTTP headers before sending client requests upstream.
+
+An example of nginx configuration file that uses that module can be found at [awssig.conf](./awssig.conf).
+
+## HTTPORIGDST  - NGINX Destination IP recovery module for HTTP
+
+This dynamic module recovers the original IP address and port number of the destination packet. It is useful, for example, with container sidecars where all outgoing traffic is redirected to a separate container with iptables before reaching the target.
 
 This module can only be built with the "linux" feature enabled, and will only successfully build on a Linux OS.
 
 ### Dependencies
-
-This modules uses the Rust crate libc and Linux **getsockopt** socket API.
+This module uses the Rust crate libc and Linux **getsockopt** socket API.
 
 ### Example Configuration
 #### HTTP

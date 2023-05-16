@@ -50,7 +50,7 @@ macro_rules! ngx_http_null_variable {
 ///
 /// This is typically used to terminate an array of Stream variable types.
 ///
-/// [`ngx_stream_variable_t`]: TODO: find appropriate link
+/// [`ngx_stream_variable_t`]: https://github.com/nginx/nginx/blob/1a8ef991d92d22eb8aded7f49595dd31a639e8a4/src/stream/ngx_stream_variables.h#L21
 #[macro_export]
 macro_rules! ngx_stream_null_variable {
     () => {
