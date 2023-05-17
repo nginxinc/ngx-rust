@@ -45,28 +45,6 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "bindgen"
-version = "0.64.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4243e6031260db77ede97ad86c27e501d646a27ab57b59a574f725d98ab1fb4"
-dependencies = [
- "bitflags",
- "cexpr",
- "clang-sys",
- "lazy_static",
- "lazycell",
- "log",
- "peeking_take_while",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash",
- "shlex",
- "syn 1.0.109",
- "which",
-]
-
-[[package]]
-name = "bindgen"
 version = "0.65.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfdf7b466f9a4903edc73f95d6d2bcd5baf8ae620638762244d3f60143643cc5"
@@ -468,7 +446,7 @@ dependencies = [
 name = "nginx-sys"
 version = "0.1.0"
 dependencies = [
- "bindgen 0.65.1",
+ "bindgen",
  "duct",
  "flate2",
  "tar",
@@ -480,13 +458,7 @@ dependencies = [
 name = "ngx"
 version = "0.3.0-beta"
 dependencies = [
- "bindgen 0.64.0",
- "duct",
- "flate2",
  "nginx-sys",
- "tar",
- "ureq",
- "which",
 ]
 
 [[package]]

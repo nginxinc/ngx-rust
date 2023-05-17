@@ -21,13 +21,5 @@ keywords = ["nginx", "module", "sys"]
 [dependencies]
 nginx-sys = { path = "nginx-sys", version = "0.1"}
 
-[build-dependencies]
-bindgen = "0.64.0"
-which = "4.4.0"
-duct = "0.13.6"
-ureq = { version = "2.6.2", features = ["tls"] }
-flate2 = "1.0.25"
-tar = "0.4.38"
-
 [badges]
 maintenance = { status = "experimental" }
