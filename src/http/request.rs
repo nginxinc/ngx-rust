@@ -1,5 +1,6 @@
 use crate::core::*;
 use crate::ffi::*;
+use crate::http::flags::SubrequestFlags;
 use crate::http::status::*;
 use crate::ngx_null_string;
 use std::fmt;
@@ -186,24 +187,35 @@ impl Request {
         unsafe { NgxStr::from_ngx_str((*self.0.headers_in.user_agent).value) }
     }
 
+    /// Set HTTP status of response.
+    pub fn set_status(&mut self, status: HTTPStatus) {
+        self.0.headers_out.status = status.into();
+    }
+
+    /// Get HTTP status of response.
     pub fn get_status(&self) -> HTTPStatus {
         HTTPStatus(self.0.headers_out.status)
     }
 
+    /// Add one to the request's current cycle count.
     pub fn increment_cycle_count(&mut self) {
-        self.0.set_count(
-            self.0.count() + 1
-        );
+        self.0.set_count(self.0.count() + 1);
     }
 
+    /// Add header key and value to the input headers object.
+    ///
+    /// See https://nginx.org/en/docs/dev/development_guide.html#http_request `headers_in`.
     pub fn add_header_in(&mut self, key: &str, value: &str) -> Option<()> {
         let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_in.headers) as _ };
-        add_to_ngx_table(table, self.0.pool, key, value)
+        unsafe { add_to_ngx_table(table, self.0.pool, key, value) }
     }
 
+    /// Add header key and value to the output headers object.
+    ///
+    /// See https://nginx.org/en/docs/dev/development_guide.html#http_request `headers_out`.
     pub fn add_header_out(&mut self, key: &str, value: &str) -> Option<()> {
         let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_out.headers) as _ };
-        add_to_ngx_table(table, self.0.pool, key, value)
+        unsafe { add_to_ngx_table(table, self.0.pool, key, value) }
     }
 
     /// Set response body [Content-Length].
@@ -252,29 +264,61 @@ impl Request {
         unsafe { Status(ngx_http_output_filter(&mut self.0, body)) }
     }
 
-    /// Perform internal redirect to a location
-    pub fn internal_redirect(&self, location: &str) -> Status {
-        assert!(!location.is_empty(), "uri location is empty");
-        let uri_ptr = &mut ngx_str_t::from_str(self.0.pool, location) as *mut _;
-
-        // FIXME: check status of ngx_http_named_location or ngx_http_internal_redirect
+    /// Utility method to perform an internal redirect without args (query parameters) or named
+    /// location.
+    /// For full control methods see `ngx_internal_redirect` and `ngx_named_location`.
+    ///
+    /// # Safety
+    ///
+    /// This method invokes unsafe methods.
+    pub unsafe fn internal_redirect(&self, location: &str) -> Status {
         if location.starts_with('@') {
-            unsafe {
-                ngx_http_named_location((self as *const Request as *mut Request).cast(), uri_ptr);
-            }
+            self.ngx_named_location(location)
         } else {
-            unsafe {
-                ngx_http_internal_redirect(
-                    (self as *const Request as *mut Request).cast(),
-                    uri_ptr,
-                    std::ptr::null_mut(),
-                );
-            }
+            self.ngx_internal_redirect(location, "")
         }
-        Status::NGX_DONE
     }
 
-    /// how many subrequests are available to make in this request
+    /// Invoke ngx_internal_redirect to perform an internal redirect to a location.
+    ///
+    /// # Safety
+    ///
+    /// This method calls into unsafe functions on the stack and dereferences raw pointers to
+    /// interface with NGINX API primitives.
+    pub unsafe fn ngx_internal_redirect(&self, location: &str, args: &str) -> Status {
+        assert!(!location.is_empty(), "uri location is empty");
+        let uri_ptr = &mut ngx_str_t::from_str(self.0.pool, location) as *mut _;
+        let args_ptr = if !args.is_empty() {
+            &mut ngx_str_t::from_str(self.0.pool, location) as *mut _
+        } else {
+            std::ptr::null_mut()
+        };
+
+        Status(ngx_http_internal_redirect(
+            (self as *const Request as *mut Request).cast(),
+            uri_ptr,
+            args_ptr,
+        ))
+    }
+
+    /// Invoke ngx_named_location to perform an internal redirect to a named location.
+    ///
+    /// # Safety
+    ///
+    /// This method calls into unsafe functions on the stack and dereferences raw pointers to
+    /// interface with NGINX API primitives.
+    pub unsafe fn ngx_named_location(&self, location: &str) -> Status {
+        assert!(!location.is_empty(), "uri location is empty");
+        assert!(location.starts_with('@'), "named location must start with @");
+        let uri_ptr = &mut ngx_str_t::from_str(self.0.pool, location) as *mut _;
+
+        Status(ngx_http_named_location(
+            (self as *const Request as *mut Request).cast(),
+            uri_ptr,
+        ))
+    }
+
+    /// How many subrequests are available to make in this request,
     /// will return NGX_HTTP_MAX_SUBREQUESTS for a parent request.
     pub fn subrequests_available(&self) -> u32 {
         // 1 is subtracted because this function was caught returning 1 extra
@@ -289,12 +333,14 @@ impl Request {
     pub fn subrequest(
         &self,
         uri: &str,
-        flags: u32,
+        args: &str,
+        flags: SubrequestFlags,
         module: &ngx_module_t,
         data: Option<*mut c_void>,
         post_callback: unsafe extern "C" fn(*mut ngx_http_request_t, *mut c_void, ngx_int_t) -> ngx_int_t,
     ) -> Status {
-        let uri_ptr = &mut ngx_str_t::from_str(self.0.pool, uri) as *mut _;
+        let uri_ptr = unsafe { &mut ngx_str_t::from_str(self.0.pool, uri) as *mut _ };
+        let args_ptr = unsafe { &mut ngx_str_t::from_str(self.0.pool, args) as *mut _ };
         // -------------
         // allocate memory and set values for ngx_http_post_subrequest_t
         let sub_ptr = self.pool().alloc(std::mem::size_of::<ngx_http_post_subrequest_t>());
@@ -317,10 +363,10 @@ impl Request {
             ngx_http_subrequest(
                 (self as *const Request as *mut Request).cast(),
                 uri_ptr,
-                std::ptr::null_mut(),
+                args_ptr,
                 &mut psr as *mut _,
                 sub_ptr as *mut _,
-                flags as _,
+                flags.into(),
             )
         };
 

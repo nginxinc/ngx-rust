@@ -70,11 +70,9 @@ pub use bindings::*;
 /// let data: &str = "example"; // The string to convert
 /// let ptr = str_to_uchar(pool, data);
 /// ```
-pub fn str_to_uchar(pool: *mut ngx_pool_t, data: &str) -> *mut u_char {
+pub unsafe fn str_to_uchar(pool: *mut ngx_pool_t, data: &str) -> *mut u_char {
     let ptr: *mut u_char = unsafe { ngx_palloc(pool, data.len() as _) as _ };
-    unsafe {
-        copy_nonoverlapping(data.as_ptr(), ptr, data.len());
-    }
+    copy_nonoverlapping(data.as_ptr(), ptr, data.len());
     ptr
 }
 
@@ -94,14 +92,6 @@ impl ngx_str_t {
         }
     }
 
-    /// Convert the nginx string to a `String` by copying its contents.
-    ///
-    /// # Returns
-    /// A new `String` containing the contents of the nginx string.
-    pub fn to_string(&self) -> String {
-        return String::from(self.to_str());
-    }
-
     /// Create an `ngx_str_t` instance from a `String`.
     ///
     /// # Arguments
@@ -109,9 +99,13 @@ impl ngx_str_t {
     /// * `pool` - A pointer to the nginx memory pool (`ngx_pool_t`).
     /// * `data` - The `String` from which to create the nginx string.
     ///
+    /// # Safety
+    /// This function is marked as unsafe because it passes a raw pointer (pool) to another unsafe
+    /// function which allocates a buffer from the pool.
+    ///
     /// # Returns
     /// An `ngx_str_t` instance representing the given `String`.
-    pub fn from_string(pool: *mut ngx_pool_t, data: String) -> Self {
+    pub unsafe fn from_string(pool: *mut ngx_pool_t, data: String) -> Self {
         ngx_str_t {
             data: str_to_uchar(pool, data.as_str()),
             len: data.len() as _,
@@ -125,9 +119,13 @@ impl ngx_str_t {
     /// * `pool` - A pointer to the nginx memory pool (`ngx_pool_t`).
     /// * `data` - The string slice from which to create the nginx string.
     ///
+    /// # Safety
+    /// This function is marked as unsafe because it passes a raw pointer (pool) to another unsafe
+    /// function which allocates a buffer from the pool.
+    ///
     /// # Returns
     /// An `ngx_str_t` instance representing the given string slice.
-    pub fn from_str(pool: *mut ngx_pool_t, data: &str) -> Self {
+    pub unsafe fn from_str(pool: *mut ngx_pool_t, data: &str) -> Self {
         ngx_str_t {
             data: str_to_uchar(pool, data),
             len: data.len() as _,
@@ -190,11 +188,16 @@ impl TryFrom<ngx_str_t> for &str {
 /// let value: &str = "value"; // The value to add
 /// let result = add_to_ngx_table(table, pool, key, value);
 /// ```
-pub fn add_to_ngx_table(table: *mut ngx_table_elt_t, pool: *mut ngx_pool_t, key: &str, value: &str) -> Option<()> {
+pub unsafe fn add_to_ngx_table(
+    table: *mut ngx_table_elt_t,
+    pool: *mut ngx_pool_t,
+    key: &str,
+    value: &str,
+) -> Option<()> {
     if table.is_null() {
         return None;
     }
-    unsafe { table.as_mut() }.map(|table| {
+    table.as_mut().map(|table| {
         table.hash = 1;
         table.key.len = key.len() as _;
         table.key.data = str_to_uchar(pool, key);
