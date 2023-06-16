@@ -1,5 +1,6 @@
 use crate::core::*;
 use crate::ffi::*;
+use crate::http::flags::SubrequestFlags;
 use crate::http::status::*;
 use crate::ngx_null_string;
 use std::fmt;
@@ -191,14 +192,30 @@ impl Request {
         self.0.headers_out.status = status.into();
     }
 
-    pub fn add_header_in(&mut self, key: &str, value: &str) -> Option<()> {
-        let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_in.headers) as _ };
-        add_to_ngx_table(table, self.0.pool, key, value)
+    /// Get HTTP status of response.
+    pub fn get_status(&self) -> HTTPStatus {
+        HTTPStatus(self.0.headers_out.status)
     }
 
+    /// Add one to the request's current cycle count.
+    pub fn increment_cycle_count(&mut self) {
+        self.0.set_count(self.0.count() + 1);
+    }
+
+    /// Add header key and value to the input headers object.
+    ///
+    /// See https://nginx.org/en/docs/dev/development_guide.html#http_request `headers_in`.
+    pub fn add_header_in(&mut self, key: &str, value: &str) -> Option<()> {
+        let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_in.headers) as _ };
+        unsafe { add_to_ngx_table(table, self.0.pool, key, value) }
+    }
+
+    /// Add header key and value to the output headers object.
+    ///
+    /// See https://nginx.org/en/docs/dev/development_guide.html#http_request `headers_out`.
     pub fn add_header_out(&mut self, key: &str, value: &str) -> Option<()> {
         let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_out.headers) as _ };
-        add_to_ngx_table(table, self.0.pool, key, value)
+        unsafe { add_to_ngx_table(table, self.0.pool, key, value) }
     }
 
     /// Set response body [Content-Length].
@@ -247,36 +264,83 @@ impl Request {
         unsafe { Status(ngx_http_output_filter(&mut self.0, body)) }
     }
 
-    /// Perform internal redirect to a location
-    pub fn internal_redirect(&self, location: &str) -> Status {
+    /// Utility method to perform an internal redirect without args (query parameters) or named
+    /// location.
+    /// For full control methods see `ngx_internal_redirect` and `ngx_named_location`.
+    ///
+    /// # Safety
+    ///
+    /// This method invokes unsafe methods.
+    pub unsafe fn internal_redirect(&self, location: &str) -> Status {
+        if location.starts_with('@') {
+            self.ngx_named_location(location)
+        } else {
+            self.ngx_internal_redirect(location, "")
+        }
+    }
+
+    /// Invoke ngx_internal_redirect to perform an internal redirect to a location.
+    ///
+    /// # Safety
+    ///
+    /// This method calls into unsafe functions on the stack and dereferences raw pointers to
+    /// interface with NGINX API primitives.
+    pub unsafe fn ngx_internal_redirect(&self, location: &str, args: &str) -> Status {
         assert!(!location.is_empty(), "uri location is empty");
         let uri_ptr = &mut ngx_str_t::from_str(self.0.pool, location) as *mut _;
-
-        // FIXME: check status of ngx_http_named_location or ngx_http_internal_redirect
-        if location.starts_with('@') {
-            unsafe {
-                ngx_http_named_location((self as *const Request as *mut Request).cast(), uri_ptr);
-            }
+        let args_ptr = if !args.is_empty() {
+            &mut ngx_str_t::from_str(self.0.pool, location) as *mut _
         } else {
-            unsafe {
-                ngx_http_internal_redirect(
-                    (self as *const Request as *mut Request).cast(),
-                    uri_ptr,
-                    std::ptr::null_mut(),
-                );
-            }
-        }
-        Status::NGX_DONE
+            std::ptr::null_mut()
+        };
+
+        Status(ngx_http_internal_redirect(
+            (self as *const Request as *mut Request).cast(),
+            uri_ptr,
+            args_ptr,
+        ))
+    }
+
+    /// Invoke ngx_named_location to perform an internal redirect to a named location.
+    ///
+    /// # Safety
+    ///
+    /// This method calls into unsafe functions on the stack and dereferences raw pointers to
+    /// interface with NGINX API primitives.
+    pub unsafe fn ngx_named_location(&self, location: &str) -> Status {
+        assert!(!location.is_empty(), "uri location is empty");
+        assert!(location.starts_with('@'), "named location must start with @");
+        let uri_ptr = &mut ngx_str_t::from_str(self.0.pool, location) as *mut _;
+
+        Status(ngx_http_named_location(
+            (self as *const Request as *mut Request).cast(),
+            uri_ptr,
+        ))
+    }
+
+    /// How many subrequests are available to make in this request,
+    /// will return NGX_HTTP_MAX_SUBREQUESTS for a parent request.
+    pub fn subrequests_available(&self) -> u32 {
+        // 1 is subtracted because this function was caught returning 1 extra
+        // The return value should be (50, 0), with the parent request returning
+        // NGX_HTTP_MAX_SUBREQUESTS.
+        // See http://nginx.org/en/docs/dev/development_guide.html#http_subrequests
+        // for more information
+        self.0.subrequests() - 1
     }
 
     /// Send a subrequest
     pub fn subrequest(
         &self,
         uri: &str,
+        args: &str,
+        flags: SubrequestFlags,
         module: &ngx_module_t,
+        data: Option<*mut c_void>,
         post_callback: unsafe extern "C" fn(*mut ngx_http_request_t, *mut c_void, ngx_int_t) -> ngx_int_t,
     ) -> Status {
-        let uri_ptr = &mut ngx_str_t::from_str(self.0.pool, uri) as *mut _;
+        let uri_ptr = unsafe { &mut ngx_str_t::from_str(self.0.pool, uri) as *mut _ };
+        let args_ptr = unsafe { &mut ngx_str_t::from_str(self.0.pool, args) as *mut _ };
         // -------------
         // allocate memory and set values for ngx_http_post_subrequest_t
         let sub_ptr = self.pool().alloc(std::mem::size_of::<ngx_http_post_subrequest_t>());
@@ -285,7 +349,12 @@ impl Request {
         let post_subreq = sub_ptr as *const ngx_http_post_subrequest_t as *mut ngx_http_post_subrequest_t;
         unsafe {
             (*post_subreq).handler = Some(post_callback);
-            (*post_subreq).data = self.get_module_ctx_ptr(module); // WARN: safety! ensure that ctx is already set
+            if let Some(datum) = data {
+                (*post_subreq).data = datum;
+            } else {
+                // WARN: safety! ensure that ctx is already set
+                (*post_subreq).data = self.get_module_ctx_ptr(module);
+            }
         }
         // -------------
 
@@ -294,26 +363,13 @@ impl Request {
             ngx_http_subrequest(
                 (self as *const Request as *mut Request).cast(),
                 uri_ptr,
-                std::ptr::null_mut(),
+                args_ptr,
                 &mut psr as *mut _,
                 sub_ptr as *mut _,
-                NGX_HTTP_SUBREQUEST_WAITED as _,
+                flags.into(),
             )
         };
 
-        // previously call of ngx_http_subrequest() would ensure that the pointer is not null anymore
-        let mut sr = unsafe { &mut *psr };
-
-        /*
-         * allocate fake request body to avoid attempts to read it and to make
-         * sure real body file (if already read) won't be closed by upstream
-         */
-        sr.request_body = self.pool().alloc(std::mem::size_of::<ngx_http_request_body_t>()) as *mut _;
-
-        if sr.request_body.is_null() {
-            return Status::NGX_ERROR;
-        }
-        sr.set_header_only(1 as _);
         Status(r)
     }
 

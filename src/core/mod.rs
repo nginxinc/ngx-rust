@@ -1,9 +1,11 @@
 mod buffer;
+mod event;
 mod pool;
 mod status;
 mod string;
 
 pub use buffer::*;
+pub use event::*;
 pub use pool::*;
 pub use status::*;
 pub use string::*;

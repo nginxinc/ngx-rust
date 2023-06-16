@@ -27,3 +27,18 @@ macro_rules! ngx_log_debug_http {
         $crate::ngx_log_debug!(log, $($arg)*);
     }
 }
+
+#[macro_export]
+macro_rules! ngx_log_debug_mask {
+    ( $mask:expr, $log:expr, $($arg:tt)* ) => {
+        let log_level = unsafe { (*$log).log_level };
+        if log_level & $mask as usize != 0 {
+            let level = $mask as $crate::ffi::ngx_uint_t;
+            let fmt = ::std::ffi::CString::new("%s").unwrap();
+            let c_message = ::std::ffi::CString::new(format!($($arg)*)).unwrap();
+            unsafe {
+                $crate::ffi::ngx_log_error_core(level, $log, 0, fmt.as_ptr(), c_message.as_ptr());
+            }
+        }
+    }
+}
