@@ -111,6 +111,15 @@ impl Request {
         self.0.connection
     }
 
+    /// Pointer to a [`ngx_http_upstream_t`] upstream server object.
+    ///
+    /// [`ngx_http_upstream_t`]: is best described in
+    /// https://nginx.org/en/docs/dev/development_guide.html#http_request
+    /// https://nginx.org/en/docs/dev/development_guide.html#http_load_balancing
+    pub fn upstream(&self) -> *mut ngx_http_upstream_t {
+        self.0.upstream
+    }
+
     /// Pointer to a [`ngx_log_t`].
     ///
     /// [`ngx_log_t`]: https://nginx.org/en/docs/dev/development_guide.html#logging

@@ -27,3 +27,26 @@ macro_rules! ngx_log_debug_http {
         $crate::ngx_log_debug!(log, $($arg)*);
     }
 }
+
+/// Log with appropriate debug mask.
+///
+/// When the request logger is available `ngx_log_debug_http` can be used for `NGX_LOG_DEBUG_HTTP` masks.
+/// This macro is useful when other masks are necessary or when the request logger is not
+/// conveniently accessible.
+///
+/// See https://nginx.org/en/docs/dev/development_guide.html#logging for details and available
+/// masks.
+#[macro_export]
+macro_rules! ngx_log_debug_mask {
+    ( $mask:expr, $log:expr, $($arg:tt)* ) => {
+        let log_level = unsafe { (*$log).log_level };
+        if log_level & $mask as usize != 0 {
+            let level = $mask as $crate::ffi::ngx_uint_t;
+            let fmt = ::std::ffi::CString::new("%s").unwrap();
+            let c_message = ::std::ffi::CString::new(format!($($arg)*)).unwrap();
+            unsafe {
+                $crate::ffi::ngx_log_error_core(level, $log, 0, fmt.as_ptr(), c_message.as_ptr());
+            }
+        }
+    }
+}
