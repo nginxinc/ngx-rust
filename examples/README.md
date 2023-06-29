@@ -98,7 +98,7 @@ The following embedded variables are provided:
 
 1. Clone the git repository.
   ```
-  https://github.com/nginxinc/ngx-rust
+  git clone git@github.com:nginxinc/ngx-rust.git
   ```
 
 2. Compile the module from the cloned repo.
@@ -150,3 +150,69 @@ The following embedded variables are provided:
 ### Caveats
 
 This module only supports IPv4.
+
+## UPSTREAM - Example upstream / load balancing module for HTTP
+
+This module simply proxies requests through a custom load balancer to the previously configured balancer. This is for demonstration purposes only. As a module writer, you can start with this structure and adjust to your needs, then implement the proper algorithm for your usage.
+
+The module replaces the `peer` callback functions with its own, logs, and then calls through to the originally saved `peer` functions. This may look confusing at first, but rest assured, it's intentionally not implementing an algorithm of its own.
+
+### Attributions
+
+This module was converted from https://github.com/gabihodoroaga/nginx-upstream-module.
+
+### Example Configuration
+#### HTTP
+
+```nginx configuration
+load_module "modules/upstream.so"
+
+http {
+  upstream backend {
+    server localhost:8081;
+
+    custom 32;
+  }
+
+  server {
+    listen 8080;
+    server_name _;
+
+    location / {
+      proxy_pass http://backend;
+    }
+  }
+}
+```
+
+### Usage
+
+1. Clone the git repository.
+  ```
+  git clone git@github.com:nginxinc/ngx-rust.git
+  ```
+
+2. Compile the module from the cloned repo.
+  ```
+  cd ${CLONED_DIRECTORY}/ngx-rust
+  cargo buile --package=examples --example=upstream
+  ```
+
+3. Copy the shared object to the modules directory, /etc/nginx/modules.
+  ```
+  cp ./target/debug/examples/libupstream.so /etc/nginx/modules
+  ```
+
+4. Add the `load_module` directive to your configuration.
+  ```
+  load_module "modules/libupstream.so";
+  ```
+
+5. Add the example `server` and `upstream` block from the example above.
+
+6. Reload NGINX.
+  ```
+  nginx -t && nginx -s reload
+  ```
+
+7. Test with `curl`. Traffic should pass to your listener on port 8081 (this could be another NGINX server for example). With debug logging enabled you should notice the "custom" log messages (see the source code for log examples).

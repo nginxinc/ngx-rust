@@ -16,8 +16,12 @@ use ngx::{
         ngx_uint_t, NGX_CONF_NOARGS, NGX_CONF_TAKE1, NGX_CONF_UNSET, NGX_ERROR, NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF,
         NGX_LOG_DEBUG_HTTP, NGX_LOG_EMERG, NGX_RS_HTTP_SRV_CONF_OFFSET, NGX_RS_MODULE_SIGNATURE,
     },
-    http::{ngx_http_conf_get_module_srv_conf, HTTPModule, Merge, MergeConfigError, Request},
-    ngx_log_debug_http, ngx_log_debug_mask, ngx_modules, ngx_null_command, ngx_string,
+    http::{
+        ngx_http_conf_get_module_srv_conf, ngx_http_conf_upstream_srv_conf_immutable,
+        ngx_http_conf_upstream_srv_conf_mutable, HTTPModule, Merge, MergeConfigError, Request,
+    },
+    http_upstream_peer_init, ngx_log_debug, ngx_log_debug_http, ngx_log_debug_mask, ngx_modules, ngx_null_command,
+    ngx_string,
 };
 use std::{
     mem,
@@ -25,25 +29,11 @@ use std::{
     slice,
 };
 
-//FIXME move this to src/http/request.rs or an upstream.rs?
-#[macro_export]
-macro_rules! http_upstream_peer_init {
-    ( $name: ident, $handler: expr ) => {
-        #[no_mangle]
-        unsafe extern "C" fn $name(r: *mut ngx_http_request_t, us: *mut ngx_http_upstream_srv_conf_t) -> ngx_int_t {
-            let status: Status = $handler(unsafe { &mut Request::from_ngx_http_request(r) }, us);
-            status.0
-        }
-    };
-}
-
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
 struct SrvConfig {
     max: u32,
 
-    //FIXME: should these be traits that a server implements to make the
-    //functions easier to use?
     original_init_upstream: ngx_http_upstream_init_pt,
     original_init_peer: ngx_http_upstream_init_peer_pt,
 }
@@ -68,22 +58,22 @@ impl Merge for SrvConfig {
 #[repr(C)]
 struct UpstreamPeerData {
     conf: Option<*const SrvConfig>,
-    upstream: *mut ngx_http_upstream_t,
-    data: *mut c_void,
-    client_connection: *mut ngx_connection_t,
+    upstream: Option<*mut ngx_http_upstream_t>,
+    client_connection: Option<*mut ngx_connection_t>,
     original_get_peer: ngx_event_get_peer_pt,
     original_free_peer: ngx_event_free_peer_pt,
+    data: *mut c_void,
 }
 
 impl Default for UpstreamPeerData {
     fn default() -> Self {
         UpstreamPeerData {
             conf: None,
-            upstream: std::ptr::null_mut(),
-            data: std::ptr::null_mut(),
-            client_connection: std::ptr::null_mut(),
+            upstream: None,
+            client_connection: None,
             original_get_peer: None,
             original_free_peer: None,
+            data: std::ptr::null_mut(),
         }
     }
 }
@@ -147,46 +137,41 @@ pub static mut ngx_http_upstream_custom_module: ngx_module_t = ngx_module_t {
     spare_hook7: 0,
 };
 
+// http_upstream_init_custom_peer
+// The module's custom peer.init callback. On HTTP request the peer upstream get and free callbacks
+// are saved into peer data and replaced with this module's custom callbacks.
 http_upstream_peer_init!(
-    init_custom_peer,
+    http_upstream_init_custom_peer,
     |request: &mut Request, us: *mut ngx_http_upstream_srv_conf_t| {
-        ngx_log_debug_http!(request, "custom init peer");
+        ngx_log_debug_http!(request, "CUSTOM UPSTREAM request peer init");
 
         let mut hcpd = request.pool().alloc_type::<UpstreamPeerData>();
         if hcpd.is_null() {
             return Status::NGX_ERROR;
         }
 
-        // FIXME make this a convenience macro?
-        let hccf: *const SrvConfig = (*us)
-            .srv_conf
-            .offset(ngx_http_upstream_custom_module.ctx_index as isize)
-            as *const SrvConfig;
-
-        // FIXME method or macro?
-        // Casting from Rust types to C function pointers might be better as macros for
-        // original_init_peer, free, and get.
-        //
-        // Casting to ngx_http_request_t might also benefit. Alternatively a trait which config and
-        // upstream data use may work as well.
-        let original_init_peer: unsafe extern "C" fn(
-            *mut ngx_http_request_t,
-            *mut ngx_http_upstream_srv_conf_t,
-        ) -> ngx_int_t = unsafe { mem::transmute((*hccf).original_init_peer) };
-
-        {
-            let r: *mut ngx_http_request_t = unsafe { mem::transmute(&request) };
-            if original_init_peer(r, us) != Status::NGX_OK.into() {
-                return Status::NGX_ERROR;
-            }
+        let maybe_conf: Option<*const SrvConfig> =
+            ngx_http_conf_upstream_srv_conf_immutable(us, &ngx_http_upstream_custom_module);
+        if maybe_conf.is_none() {
+            return Status::NGX_ERROR;
         }
 
-        let upstream_ptr = request.upstream();
+        let hccf = maybe_conf.unwrap();
+        let original_init_peer = (*hccf).original_init_peer.unwrap();
+        if original_init_peer(request.into(), us) != Status::NGX_OK.into() {
+            return Status::NGX_ERROR;
+        }
+
+        let maybe_upstream = request.upstream();
+        if maybe_upstream.is_none() {
+            return Status::NGX_ERROR;
+        }
+        let upstream_ptr = maybe_upstream.unwrap();
 
         (*hcpd).conf = Some(hccf);
-        (*hcpd).upstream = upstream_ptr;
+        (*hcpd).upstream = maybe_upstream;
         (*hcpd).data = (*upstream_ptr).peer.data;
-        (*hcpd).client_connection = request.connection();
+        (*hcpd).client_connection = Some(request.connection());
         (*hcpd).original_get_peer = (*upstream_ptr).peer.get;
         (*hcpd).original_free_peer = (*upstream_ptr).peer.free;
 
@@ -194,81 +179,115 @@ http_upstream_peer_init!(
         (*upstream_ptr).peer.get = Some(ngx_http_upstream_get_custom_peer);
         (*upstream_ptr).peer.free = Some(ngx_http_upstream_free_custom_peer);
 
+        ngx_log_debug_http!(request, "CUSTOM UPSTREAM end request peer init");
         Status::NGX_OK
     }
 );
 
+// ngx_http_usptream_get_custom_peer
+// For demonstration purposes, use the original get callback, but log this callback proxies through
+// to the original.
 #[no_mangle]
 unsafe extern "C" fn ngx_http_upstream_get_custom_peer(pc: *mut ngx_peer_connection_t, data: *mut c_void) -> ngx_int_t {
-    let hcdp: *mut UpstreamPeerData = unsafe { mem::transmute(data) };
+    let hcpd: *mut UpstreamPeerData = unsafe { mem::transmute(data) };
 
-    //FIXME log
+    ngx_log_debug_mask!(
+        NGX_LOG_DEBUG_HTTP,
+        (*pc).log,
+        "CUSTOM UPSTREAM get peer, try: {}, conn: {:p}",
+        (*pc).tries,
+        (*hcpd).client_connection.unwrap(),
+    );
 
-    let original_get_peer: unsafe extern "C" fn(*mut ngx_peer_connection_t, *mut c_void) -> ngx_int_t =
-        unsafe { mem::transmute((*hcdp).original_get_peer) };
-    let rc = original_get_peer(pc, (*hcdp).data);
+    let original_get_peer = (*hcpd).original_get_peer.unwrap();
+    let rc = original_get_peer(pc, (*hcpd).data);
 
     if rc != Status::NGX_OK.into() {
         return rc;
     }
+
+    ngx_log_debug!((*pc).log, "CUSTOM UPSTREAM end get peer");
     Status::NGX_OK.into()
 }
 
+// ngx_http_upstream_free_custom_peer
+// For demonstration purposes, use the original free callback, but log this callback proxies
+// through to the original.
 #[no_mangle]
 unsafe extern "C" fn ngx_http_upstream_free_custom_peer(
     pc: *mut ngx_peer_connection_t,
     data: *mut c_void,
     state: ngx_uint_t,
 ) {
-    let hcdp: *mut UpstreamPeerData = unsafe { mem::transmute(data) };
+    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*pc).log, "CUSTOM UPSTREAM free peer");
 
-    let original_free_peer: unsafe extern "C" fn(*mut ngx_peer_connection_t, data: *mut c_void, ngx_uint_t) =
-        unsafe { mem::transmute((*hcdp).original_free_peer) };
+    let hcpd: *mut UpstreamPeerData = unsafe { mem::transmute(data) };
 
-    //FIXME log
-    original_free_peer(pc, (*hcdp).data, state);
+    let original_free_peer = (*hcpd).original_free_peer.unwrap();
+
+    original_free_peer(pc, (*hcpd).data, state);
+
+    ngx_log_debug!((*pc).log, "CUSTOM UPSTREAM end free peer");
 }
 
+// ngx_http_upstream_init_custom
+// The module's custom `peer.init_upstream` callback.
+// The original callback is saved in our SrvConfig data and reset to this module's `peer.init`.
 #[no_mangle]
 unsafe extern "C" fn ngx_http_upstream_init_custom(
     cf: *mut ngx_conf_t,
     us: *mut ngx_http_upstream_srv_conf_t,
 ) -> ngx_int_t {
-    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*cf).log, "custom init upstream");
+    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*cf).log, "CUSTOM UPSTREAM peer init_upstream");
 
-    // FIXME: this comes from ngx_http_conf_upstream_srv_conf macro which isn't built into bindings
-    // start creating a macros file?
-    let hccf: *mut SrvConfig = (*us)
-        .srv_conf
-        .offset(ngx_http_upstream_custom_module.ctx_index as isize) as *mut SrvConfig;
-
-    // FIXME: ngx_conf_init_uint_value macro is unavailable
-    if (*hccf).max == u32::MAX {
-        (*hccf).max = 100;
-    }
-
-    //FIXME make a trait and call this as a method on SrvConfig?
-    let init_upstream_ptr: unsafe extern "C" fn(*mut ngx_conf_t, *mut ngx_http_upstream_srv_conf_t) -> ngx_int_t =
-        unsafe { mem::transmute((*hccf).original_init_upstream) };
-    if init_upstream_ptr(cf, us) != Status::NGX_OK.into() {
+    let maybe_conf: Option<*mut SrvConfig> =
+        ngx_http_conf_upstream_srv_conf_mutable(us, &ngx_http_upstream_custom_module);
+    if let None = maybe_conf {
+        ngx_conf_log_error(
+            NGX_LOG_EMERG as usize,
+            cf,
+            0,
+            "CUSTOM UPSTREAM no upstream srv_conf".as_bytes().as_ptr() as *const i8,
+        );
         return isize::from(Status::NGX_ERROR);
+    } else {
+        let hccf = maybe_conf.unwrap();
+        // NOTE: ngx_conf_init_uint_value macro is unavailable
+        if (*hccf).max == u32::MAX {
+            (*hccf).max = 100;
+        }
+
+        let init_upstream_ptr = (*hccf).original_init_upstream.unwrap();
+        if init_upstream_ptr(cf, us) != Status::NGX_OK.into() {
+            ngx_conf_log_error(
+                NGX_LOG_EMERG as usize,
+                cf,
+                0,
+                "CUSTOM UPSTREAM failed calling init_upstream".as_bytes().as_ptr() as *const i8,
+            );
+            return isize::from(Status::NGX_ERROR);
+        }
+
+        (*hccf).original_init_peer = (*us).peer.init;
+        (*us).peer.init = Some(http_upstream_init_custom_peer);
     }
 
-    (*hccf).original_init_peer = (*us).peer.init;
-    //(*us).peer.init = Some(ngx_http_upstream_init_custom_peer);
-    (*us).peer.init = Some(init_custom_peer);
-
+    ngx_log_debug!((*cf).log, "CUSTOM UPSTREAM end peer init_upstream");
     isize::from(Status::NGX_OK)
 }
 
+// ngx_http_upstream_commands_set_custom
+// Entry point for the module, if this command is set our custom upstreams take effect.
+// The original upstream initializer function is saved and replaced with this module's initializer.
 #[no_mangle]
 unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
     cf: *mut ngx_conf_t,
     cmd: *mut ngx_command_t,
     conf: *mut c_void,
 ) -> *mut c_char {
-    //FIXME need a log macros that accepts level and masks:
-    //  NGX_LOG_DEBUG_HTTP, NGX_LOG_DEBUG_EVENT, etc.
+    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*cf).log, "CUSTOM UPSTREAM module init");
+
+    ngx_log_debug!((*cf).log, "CUSTOM DEBUG !MASK LOG");
 
     let mut ccf = &mut (*(conf as *mut SrvConfig));
 
@@ -300,10 +319,14 @@ unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
 
     (*uscf).peer.init_upstream = Some(ngx_http_upstream_init_custom);
 
+    ngx_log_debug!((*cf).log, "CUSTOM UPSTREAM end module init");
     // NGX_CONF_OK
     std::ptr::null_mut()
 }
 
+// The upstream module.
+// Only server blocks are supported to trigger the module command; therefore, the only callback
+// implemented is our `create_srv_conf` method.
 struct Module;
 
 impl HTTPModule for Module {
@@ -315,11 +338,20 @@ impl HTTPModule for Module {
         let mut pool = Pool::from_ngx_pool((*cf).pool);
         let conf = pool.alloc_type::<SrvConfig>();
         if conf.is_null() {
+            ngx_conf_log_error(
+                NGX_LOG_EMERG as usize,
+                cf,
+                0,
+                "CUSTOM UPSTREAM could not allocate memory for config"
+                    .as_bytes()
+                    .as_ptr() as *const i8,
+            );
             return std::ptr::null_mut();
         }
 
         (*conf).max = NGX_CONF_UNSET as u32;
 
+        ngx_log_debug!((*cf).log, "CUSTOM UPSTREAM end create_srv_conf");
         conf as *mut c_void
     }
 }

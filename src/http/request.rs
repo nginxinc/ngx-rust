@@ -79,6 +79,17 @@ macro_rules! http_variable_get {
 #[repr(transparent)]
 pub struct Request(ngx_http_request_t);
 
+impl<'a> From<&'a Request> for *const ngx_http_request_t {
+    fn from(request: &'a Request) -> Self {
+        &request.0 as *const _
+    }
+}
+impl<'a> From<&'a mut Request> for *mut ngx_http_request_t {
+    fn from(request: &'a mut Request) -> Self {
+        &request.0 as *const _ as *mut _
+    }
+}
+
 impl Request {
     /// Create a [`Request`] from an [`ngx_http_request_t`].
     ///
@@ -104,20 +115,22 @@ impl Request {
         unsafe { Pool::from_ngx_pool(self.0.pool) }
     }
 
+    /// Returns the result as an `Option` if it exists, otherwise `None`.
+    ///
+    /// The option wraps a pointer to a [`ngx_http_upstream_t`] upstream server object.
+    ///
+    /// [`ngx_http_upstream_t`]: is best described in
+    /// https://nginx.org/en/docs/dev/development_guide.html#http_request
+    /// https://nginx.org/en/docs/dev/development_guide.html#http_load_balancing
+    pub fn upstream(&self) -> Option<*mut ngx_http_upstream_t> {
+        Some(self.0.upstream)
+    }
+
     /// Pointer to a [`ngx_connection_t`] client connection object.
     ///
     /// [`ngx_connection_t`]: https://nginx.org/en/docs/dev/development_guide.html#connection
     pub fn connection(&self) -> *mut ngx_connection_t {
         self.0.connection
-    }
-
-    /// Pointer to a [`ngx_http_upstream_t`] upstream server object.
-    ///
-    /// [`ngx_http_upstream_t`]: is best described in
-    /// https://nginx.org/en/docs/dev/development_guide.html#http_request
-    /// https://nginx.org/en/docs/dev/development_guide.html#http_load_balancing
-    pub fn upstream(&self) -> *mut ngx_http_upstream_t {
-        self.0.upstream
     }
 
     /// Pointer to a [`ngx_log_t`].
