@@ -8,6 +8,11 @@
     - [Embedded Variables](#embedded-variables)
     - [Usage](#usage)
     - [Caveats](#caveats)
+  - [UPSTREAM - Example upstream module for HTTP](#upstream---example-upstream-module-for-http)
+    - [Attributions](#attributions)
+    - [Example Configuration](#example-configuration)
+      - [HTTP](#http)
+    - [Usage](#usage)
 
 
 # Examples
@@ -151,7 +156,7 @@ The following embedded variables are provided:
 
 This module only supports IPv4.
 
-## UPSTREAM - Example upstream / load balancing module for HTTP
+## UPSTREAM - Example upstream module for HTTP
 
 This module simply proxies requests through a custom load balancer to the previously configured balancer. This is for demonstration purposes only. As a module writer, you can start with this structure and adjust to your needs, then implement the proper algorithm for your usage.
 
@@ -195,7 +200,7 @@ http {
 2. Compile the module from the cloned repo.
   ```
   cd ${CLONED_DIRECTORY}/ngx-rust
-  cargo buile --package=examples --example=upstream
+  cargo build --package=examples --example=upstream
   ```
 
 3. Copy the shared object to the modules directory, /etc/nginx/modules.
