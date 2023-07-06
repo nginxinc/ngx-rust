@@ -22,13 +22,16 @@ name = "awssig"
 path = "awssig.rs"
 crate-type = ["cdylib"]
 
-
-
 [[example]]
 name = "httporigdst"
 path = "httporigdst.rs"
 crate-type = ["cdylib"]
 required-features = ["linux"]
+
+[[example]]
+name = "upstream"
+path = "upstream.rs"
+crate-type = ["cdylib"]
 
 [features]
 linux = []
