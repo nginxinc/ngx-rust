@@ -65,7 +65,7 @@ impl Nginx {
     // make sure we stop existing nginx and start new master process
     // intentinally ignore failure in stop
     pub fn restart(&mut self) -> Result<Output> {
-        self.stop();
+        let _ = self.stop();
         self.start()
     }
 

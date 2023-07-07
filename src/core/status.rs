@@ -1,10 +1,14 @@
 use crate::ffi::*;
 use std::fmt;
 
+/// Status
+///
+/// Rust native wrapper for NGINX status codes.
 #[derive(Ord, PartialOrd, Eq, PartialEq)]
 pub struct Status(pub ngx_int_t);
 
 impl Status {
+    /// Is this Status equivalent to NGX_OK?
     pub fn is_ok(&self) -> bool {
         self == &Status::NGX_OK
     }
@@ -40,13 +44,23 @@ macro_rules! ngx_codes {
 }
 
 ngx_codes! {
+    /// NGX_OK - Operation succeeded.
     (NGX_OK);
+    /// NGX_ERROR - Operation failed.
     (NGX_ERROR);
+    /// NGX_AGAIN - Operation incomplete; call the function again.
     (NGX_AGAIN);
+    /// NGX_BUSY - Resource is not available.
     (NGX_BUSY);
+    /// NGX_DONE - Operation complete or continued elsewhere. Also used as an alternative success code.
     (NGX_DONE);
+    /// NGX_DECLINED - Operation rejected, for example, because it is disabled in the configuration.
+    /// This is never an error.
     (NGX_DECLINED);
+    /// NGX_ABORT - Function was aborted. Also used as an alternative error code.
     (NGX_ABORT);
 }
+
+/// NGX_CONF_ERROR - An error occurred while parsing and validating configuration.
 pub const NGX_CONF_ERROR: *const () = -1isize as *const ();
 // pub const CONF_OK: Status = Status(NGX_CONF_OK as ngx_int_t);

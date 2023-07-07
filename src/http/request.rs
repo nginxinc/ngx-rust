@@ -149,6 +149,9 @@ impl Request {
         Some(co)
     }
 
+    /// Sets the value as the module's context.
+    ///
+    /// See https://nginx.org/en/docs/dev/development_guide.html#http_request
     pub fn set_module_ctx(&self, value: *mut c_void, module: &ngx_module_t) {
         unsafe {
             *self.0.ctx.add(module.ctx_index) = value;
@@ -191,11 +194,17 @@ impl Request {
         self.0.headers_out.status = status.into();
     }
 
+    /// Add header to the `headers_in` object.
+    ///
+    /// See https://nginx.org/en/docs/dev/development_guide.html#http_request
     pub fn add_header_in(&mut self, key: &str, value: &str) -> Option<()> {
         let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_in.headers) as _ };
         add_to_ngx_table(table, self.0.pool, key, value)
     }
 
+    /// Add header to the `headers_out` object.
+    ///
+    /// See https://nginx.org/en/docs/dev/development_guide.html#http_request
     pub fn add_header_out(&mut self, key: &str, value: &str) -> Option<()> {
         let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_out.headers) as _ };
         add_to_ngx_table(table, self.0.pool, key, value)
@@ -340,6 +349,9 @@ impl fmt::Debug for Request {
     }
 }
 
+/// Iterator for `ngx_list_t` types.
+///
+/// Implementes the std::iter::Iterator trait.
 pub struct NgxListIterator {
     done: bool,
     part: *const ngx_list_part_t,
@@ -459,6 +471,7 @@ impl Method {
     /// CONNECT
     pub const CONNECT: Method = Method(MethodInner::Connect);
 
+    /// Convert a Method to a &str.
     #[inline]
     pub fn as_str(&self) -> &str {
         match self.0 {
