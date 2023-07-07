@@ -199,7 +199,7 @@ impl Request {
     /// See https://nginx.org/en/docs/dev/development_guide.html#http_request
     pub fn add_header_in(&mut self, key: &str, value: &str) -> Option<()> {
         let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_in.headers) as _ };
-        add_to_ngx_table(table, self.0.pool, key, value)
+        unsafe { add_to_ngx_table(table, self.0.pool, key, value) }
     }
 
     /// Add header to the `headers_out` object.
@@ -207,7 +207,7 @@ impl Request {
     /// See https://nginx.org/en/docs/dev/development_guide.html#http_request
     pub fn add_header_out(&mut self, key: &str, value: &str) -> Option<()> {
         let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_out.headers) as _ };
-        add_to_ngx_table(table, self.0.pool, key, value)
+        unsafe { add_to_ngx_table(table, self.0.pool, key, value) }
     }
 
     /// Set response body [Content-Length].
@@ -259,7 +259,7 @@ impl Request {
     /// Perform internal redirect to a location
     pub fn internal_redirect(&self, location: &str) -> Status {
         assert!(!location.is_empty(), "uri location is empty");
-        let uri_ptr = &mut ngx_str_t::from_str(self.0.pool, location) as *mut _;
+        let uri_ptr = unsafe { &mut ngx_str_t::from_str(self.0.pool, location) as *mut _ };
 
         // FIXME: check status of ngx_http_named_location or ngx_http_internal_redirect
         if location.starts_with('@') {
@@ -285,7 +285,7 @@ impl Request {
         module: &ngx_module_t,
         post_callback: unsafe extern "C" fn(*mut ngx_http_request_t, *mut c_void, ngx_int_t) -> ngx_int_t,
     ) -> Status {
-        let uri_ptr = &mut ngx_str_t::from_str(self.0.pool, uri) as *mut _;
+        let uri_ptr = unsafe { &mut ngx_str_t::from_str(self.0.pool, uri) as *mut _ };
         // -------------
         // allocate memory and set values for ngx_http_post_subrequest_t
         let sub_ptr = self.pool().alloc(std::mem::size_of::<ngx_http_post_subrequest_t>());
