@@ -33,9 +33,27 @@
 //! ```
 
 #![warn(missing_docs)]
+/// The core module.
+///
+/// This module provides fundamental utilities needed to interface with many NGINX primitives.
+/// String conversions, the pool (memory interface) object, and buffer APIs are covered here. These
+/// utilities will generally align with the NGINX 'core' files and APIs.
 pub mod core;
+
+/// The ffi module.
+///
+/// This module provides scoped FFI bindings for NGINX symbols.
 pub mod ffi;
+
+/// The http module.
+///
+/// This modules provides wrappers and utilities to NGINX http APIs, such as requests,
+/// configuration access, and statuses.
 pub mod http;
+
+/// The log module.
+///
+/// This module provides an interface into the NGINX logger framework.
 pub mod log;
 
 /// Define modules exported by this library.

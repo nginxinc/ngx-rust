@@ -49,6 +49,7 @@ impl fmt::Debug for HTTPStatus {
 }
 
 impl HTTPStatus {
+    /// Convets a u16 to a status code.
     #[inline]
     pub fn from_u16(src: u16) -> Result<HTTPStatus, InvalidHTTPStatusCode> {
         if !(100..600).contains(&src) {
@@ -58,7 +59,7 @@ impl HTTPStatus {
         Ok(HTTPStatus(src.into()))
     }
 
-    /// Converts a &[u8] to a status code
+    /// Converts a &[u8] to a status code.
     pub fn from_bytes(src: &[u8]) -> Result<HTTPStatus, InvalidHTTPStatusCode> {
         if src.len() != 3 {
             return Err(InvalidHTTPStatusCode::new());

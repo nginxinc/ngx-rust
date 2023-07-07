@@ -5,6 +5,7 @@ use crate::ffi::*;
 use core::ptr;
 use std::os::raw::{c_char, c_void};
 
+/// MergeConfigError - configuration cannot be merged with levels above.
 #[derive(Debug)]
 pub enum MergeConfigError {
     /// No value provided for configuration argument
@@ -21,7 +22,15 @@ impl std::fmt::Display for MergeConfigError {
     }
 }
 
+/// The `Merge` trait provides a method for merging configuration down through each level.
+///
+/// A module configuration should implement this trait for setting its configuration throughout
+/// each level.
 pub trait Merge {
+    /// Module merge function.
+    ///
+    /// # Returns
+    /// Result, Ok on success or MergeConfigError on failure.
     fn merge(&mut self, prev: &Self) -> Result<(), MergeConfigError>;
 }
 
@@ -31,9 +40,18 @@ impl Merge for () {
     }
 }
 
+/// The `HTTPModule` trait provides the NGINX configuration stage interface.
+///
+/// These functions allocate structures, initialize them, and merge through the configuration
+/// layers.
+///
+/// See https://nginx.org/en/docs/dev/development_guide.html#adding_new_modules for details.
 pub trait HTTPModule {
+    /// Configuration in the `http` block.
     type MainConf: Merge + Default;
+    /// Configuration in a `server` block within the `http` block.
     type SrvConf: Merge + Default;
+    /// Configuration in a `location` block within the `http` block.
     type LocConf: Merge + Default;
 
     /// # Safety

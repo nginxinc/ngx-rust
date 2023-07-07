@@ -24,10 +24,8 @@
 //! ```rust,no_run
 //! use nginx_sys::nginx_version;
 //!
-//! fn main() {
-//!     let version = unsafe { nginx_version() };
-//!     println!("Nginx version: {}", version);
-//! }
+//! let version = unsafe { nginx_version() };
+//! println!("Nginx version: {}", version);
 //! ```
 //!
 #![warn(missing_docs)]
@@ -45,7 +43,7 @@ mod bindings {
     #![allow(dead_code)]
     #![allow(clippy::all)]
     #![allow(improper_ctypes)]
-    #[allow(rustdoc::broken_intra_doc_links)]
+    #![allow(rustdoc::broken_intra_doc_links)]
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 #[doc(no_inline)]
@@ -89,17 +87,9 @@ impl ngx_str_t {
     /// A string slice (`&str`) representing the nginx string.
     pub fn to_str(&self) -> &str {
         unsafe {
-            let slice = slice::from_raw_parts(self.data, self.len as usize);
+            let slice = slice::from_raw_parts(self.data, self.len);
             return std::str::from_utf8(slice).unwrap();
         }
-    }
-
-    /// Convert the nginx string to a `String` by copying its contents.
-    ///
-    /// # Returns
-    /// A new `String` containing the contents of the nginx string.
-    pub fn to_string(&self) -> String {
-        return String::from(self.to_str());
     }
 
     /// Create an `ngx_str_t` instance from a `String`.
@@ -140,7 +130,7 @@ impl From<ngx_str_t> for &[u8] {
         if s.len == 0 || s.data.is_null() {
             return Default::default();
         }
-        unsafe { slice::from_raw_parts(s.data, s.len as usize) }
+        unsafe { slice::from_raw_parts(s.data, s.len) }
     }
 }
 
