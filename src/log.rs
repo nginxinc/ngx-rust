@@ -1,6 +1,6 @@
 // Utility function to provide typed checking of the mask's field state.
 #[inline(always)]
-fn check_mask(mask: DebugMasks, log_level: usize) -> bool {
+fn check_mask(mask: DebugMask, log_level: usize) -> bool {
     let mask_bits: u32 = mask.into();
     if log_level & mask_bits as usize == 0 {
         return false;
@@ -50,7 +50,7 @@ macro_rules! ngx_log_debug_http {
 /// Debug masks for use with ngx_log_debug_mask, these represent the only accepted values for the
 /// mask.
 #[derive(Debug)]
-pub enum DebugMasks {
+pub enum DebugMask {
     /// Aligns to the NGX_LOG_DEBUG_CORE mask.
     Core,
     /// Aligns to the NGX_LOG_DEBUG_ALLOC mask.
@@ -67,33 +67,33 @@ pub enum DebugMasks {
     Stream,
 }
 
-impl TryFrom<u32> for DebugMasks {
+impl TryFrom<u32> for DebugMask {
     type Error = u32;
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            crate::ffi::NGX_LOG_DEBUG_CORE => Ok(DebugMasks::Core),
-            crate::ffi::NGX_LOG_DEBUG_ALLOC => Ok(DebugMasks::Alloc),
-            crate::ffi::NGX_LOG_DEBUG_MUTEX => Ok(DebugMasks::Mutex),
-            crate::ffi::NGX_LOG_DEBUG_EVENT => Ok(DebugMasks::Event),
-            crate::ffi::NGX_LOG_DEBUG_HTTP => Ok(DebugMasks::Http),
-            crate::ffi::NGX_LOG_DEBUG_MAIL => Ok(DebugMasks::Mail),
-            crate::ffi::NGX_LOG_DEBUG_STREAM => Ok(DebugMasks::Stream),
+            crate::ffi::NGX_LOG_DEBUG_CORE => Ok(DebugMask::Core),
+            crate::ffi::NGX_LOG_DEBUG_ALLOC => Ok(DebugMask::Alloc),
+            crate::ffi::NGX_LOG_DEBUG_MUTEX => Ok(DebugMask::Mutex),
+            crate::ffi::NGX_LOG_DEBUG_EVENT => Ok(DebugMask::Event),
+            crate::ffi::NGX_LOG_DEBUG_HTTP => Ok(DebugMask::Http),
+            crate::ffi::NGX_LOG_DEBUG_MAIL => Ok(DebugMask::Mail),
+            crate::ffi::NGX_LOG_DEBUG_STREAM => Ok(DebugMask::Stream),
             _ => Err(0),
         }
     }
 }
 
-impl From<DebugMasks> for u32 {
-    fn from(value: DebugMasks) -> Self {
+impl From<DebugMask> for u32 {
+    fn from(value: DebugMask) -> Self {
         match value {
-            DebugMasks::Core => crate::ffi::NGX_LOG_DEBUG_CORE,
-            DebugMasks::Alloc => crate::ffi::NGX_LOG_DEBUG_ALLOC,
-            DebugMasks::Mutex => crate::ffi::NGX_LOG_DEBUG_MUTEX,
-            DebugMasks::Event => crate::ffi::NGX_LOG_DEBUG_EVENT,
-            DebugMasks::Http => crate::ffi::NGX_LOG_DEBUG_HTTP,
-            DebugMasks::Mail => crate::ffi::NGX_LOG_DEBUG_MAIL,
-            DebugMasks::Stream => crate::ffi::NGX_LOG_DEBUG_STREAM,
+            DebugMask::Core => crate::ffi::NGX_LOG_DEBUG_CORE,
+            DebugMask::Alloc => crate::ffi::NGX_LOG_DEBUG_ALLOC,
+            DebugMask::Mutex => crate::ffi::NGX_LOG_DEBUG_MUTEX,
+            DebugMask::Event => crate::ffi::NGX_LOG_DEBUG_EVENT,
+            DebugMask::Http => crate::ffi::NGX_LOG_DEBUG_HTTP,
+            DebugMask::Mail => crate::ffi::NGX_LOG_DEBUG_MAIL,
+            DebugMask::Stream => crate::ffi::NGX_LOG_DEBUG_STREAM,
         }
     }
 }
@@ -108,45 +108,45 @@ impl From<DebugMasks> for u32 {
 /// masks.
 #[macro_export]
 macro_rules! ngx_log_debug_mask {
-    ( DebugMasks::Core, $log:expr, $($arg:tt)* ) => ({
+    ( DebugMask::Core, $log:expr, $($arg:tt)* ) => ({
         let log_level = unsafe { (*$log).log_level };
-        if check_mask(DebugMasks::Core, log_level) {
+        if check_mask(DebugMask::Core, log_level) {
             $crate::_ngx_log_debug_internal!(log, $($arg:tt)*);
         }
     });
-    ( DebugMasks::Alloc, $log:expr, $($arg:tt)* ) => ({
+    ( DebugMask::Alloc, $log:expr, $($arg:tt)* ) => ({
         let log_level = unsafe { (*$log).log_level };
-        if check_mask(DebugMasks::Alloc, log_level) {
+        if check_mask(DebugMask::Alloc, log_level) {
             $crate::_ngx_log_debug_internal!(log, $($arg:tt)*);
         }
     });
-    ( DebugMasks::Mutex, $log:expr, $($arg:tt)* ) => ({
+    ( DebugMask::Mutex, $log:expr, $($arg:tt)* ) => ({
         let log_level = unsafe { (*$log).log_level };
-        if check_mask(DebugMasks::Mutex, log_level) {
+        if check_mask(DebugMask::Mutex, log_level) {
             $crate::_ngx_log_debug_internal!(log, $($arg:tt)*);
         }
     });
-    ( DebugMasks::Event, $log:expr, $($arg:tt)* ) => ({
+    ( DebugMask::Event, $log:expr, $($arg:tt)* ) => ({
         let log_level = unsafe { (*$log).log_level };
-        if check_mask(DebugMasks::Event, log_level) {
+        if check_mask(DebugMask::Event, log_level) {
             $crate::_ngx_log_debug_internal!(log, $($arg:tt)*);
         }
     });
-    ( DebugMasks::Http, $log:expr, $($arg:tt)* ) => ({
+    ( DebugMask::Http, $log:expr, $($arg:tt)* ) => ({
         let log_level = unsafe { (*$log).log_level };
-        if check_mask(DebugMasks::Http, log_level) {
+        if check_mask(DebugMask::Http, log_level) {
             $crate::_ngx_log_debug_internal!(log, $($arg:tt)*);
         }
     });
-    ( DebugMasks::Mail, $log:expr, $($arg:tt)* ) => ({
+    ( DebugMask::Mail, $log:expr, $($arg:tt)* ) => ({
         let log_level = unsafe { (*$log).log_level };
-        if check_mask(DebugMasks::Mail, log_level) {
+        if check_mask(DebugMask::Mail, log_level) {
             $crate::_ngx_log_debug_internal!(log, $($arg:tt)*);
         }
     });
-    ( DebugMasks::Stream, $log:expr, $($arg:tt)* ) => ({
+    ( DebugMask::Stream, $log:expr, $($arg:tt)* ) => ({
         let log_level = unsafe { (*$log).log_level };
-        if check_mask(DebugMasks::Stream, log_level) {
+        if check_mask(DebugMask::Stream, log_level) {
             $crate::_ngx_log_debug_internal!(log, $($arg:tt)*);
         }
     });
@@ -159,11 +159,11 @@ mod tests {
 
     #[test]
     fn test_mask_lower_bound() {
-        assert!(<DebugMasks as Into<u32>>::into(DebugMasks::Core) == crate::ffi::NGX_LOG_DEBUG_FIRST);
+        assert!(<DebugMask as Into<u32>>::into(DebugMask::Core) == crate::ffi::NGX_LOG_DEBUG_FIRST);
     }
     #[test]
     fn test_mask_upper_bound() {
-        assert!(<DebugMasks as Into<u32>>::into(DebugMasks::Stream) == crate::ffi::NGX_LOG_DEBUG_LAST);
+        assert!(<DebugMask as Into<u32>>::into(DebugMask::Stream) == crate::ffi::NGX_LOG_DEBUG_LAST);
     }
     #[test]
     fn test_check_mask() {
@@ -172,10 +172,10 @@ mod tests {
         }
         let mock = MockLog { log_level: 16 };
 
-        let mut r = check_mask(DebugMasks::Core, mock.log_level);
+        let mut r = check_mask(DebugMask::Core, mock.log_level);
         assert!(r == true);
 
-        r = check_mask(DebugMasks::Alloc, mock.log_level);
+        r = check_mask(DebugMask::Alloc, mock.log_level);
         assert!(r == false);
     }
 }
