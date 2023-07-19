@@ -117,12 +117,16 @@ impl Request {
 
     /// Returns the result as an `Option` if it exists, otherwise `None`.
     ///
-    /// The option wraps a pointer to a [`ngx_http_upstream_t`] upstream server object.
+    /// The option wraps an ngx_http_upstream_t instance, it will be none when the underlying NGINX request
+    /// does not have a pointer to a [`ngx_http_upstream_t`] upstream structure.
     ///
     /// [`ngx_http_upstream_t`]: is best described in
     /// https://nginx.org/en/docs/dev/development_guide.html#http_request
     /// https://nginx.org/en/docs/dev/development_guide.html#http_load_balancing
     pub fn upstream(&self) -> Option<*mut ngx_http_upstream_t> {
+        if self.0.upstream.is_null() {
+            return None;
+        }
         Some(self.0.upstream)
     }
 
