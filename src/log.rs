@@ -1,4 +1,4 @@
-// Utility function to provide typed checking of the mask's field state.
+/// Utility function to provide typed checking of the mask's field state.
 #[inline(always)]
 fn check_mask(mask: DebugMask, log_level: usize) -> bool {
     let mask_bits: u32 = mask.into();
@@ -8,9 +8,9 @@ fn check_mask(mask: DebugMask, log_level: usize) -> bool {
     true
 }
 
-// Internal macro, provided to reduce code duplication.
-//
-// Expects an ngx_log_t and message format template.
+/// Internal macro, provided to reduce code duplication.
+///
+/// Expects an ngx_log_t and message format template.
 macro_rules! _ngx_log_debug_internal {
     ( $log:expr, $($arg:tt)* ) => {
         let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
@@ -98,11 +98,11 @@ impl From<DebugMask> for u32 {
     }
 }
 
-/// Log with appropriate debug mask.
+/// Log with requested debug mask.
 ///
-/// When the request logger is available `ngx_log_debug_http` can be used for `NGX_LOG_DEBUG_HTTP` masks.
-/// This macro is useful when other masks are necessary or when the request logger is not
-/// conveniently accessible.
+/// **NOTE:** This macro supports `DebugMask::Http` (`NGX_LOG_DEBUG_HTTP`), however, if you have
+/// access to a Request object via an http handler it can be more convenient and readable to use the
+/// `ngx_log_debug_http` macro instead.
 ///
 /// See https://nginx.org/en/docs/dev/development_guide.html#logging for details and available
 /// masks.
