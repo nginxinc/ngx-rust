@@ -77,13 +77,12 @@ We provide a multistage [Dockerfile](Dockerfile):
     docker buildx build --build-arg NGX_VERSION=1.23.3 -t ngx-rust .
 
     # start NGINX using [curl](examples/curl.conf) module example:
-    docker run --rm -d  -p 8000:8000 ngx-rust nginx -c examples/curl.conf
+    docker run --name curl --rm -d  -p 8000:8000 ngx-rust nginx -c examples/curl.conf
 
-    # test it - you should see 403 Forbidden
+    # Test it - you should see 403 Forbidden
     curl http://127.0.0.1:8000 -v -H "user-agent: curl"
 
-
-    # test it - you should see 404 Not Found
+    # Test it - you should see 404 Not Found
     curl http://127.0.0.1:8000 -v -H "user-agent: foo"
 
 ## Usage
