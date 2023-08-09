@@ -1,6 +1,7 @@
 use crate::ffi::*;
 
 use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::slice;
 use std::str::{self, Utf8Error};
 
@@ -56,6 +57,15 @@ impl NgxStr {
         &self.0
     }
 
+    pub fn as_str(&self) -> &str {
+        // Safety: Converting the raw data to a string slice is unsafe, but as long
+        // as the lifetime of NgxStr is properly managed, this should be safe.
+        unsafe {
+            // let slice = std::slice::from_raw_parts(self.0.data, self.0.len);
+            std::str::from_utf8_unchecked(&self.0)
+        }
+    }
+
     /// Yields a `&str` slice if the [`NgxStr`] contains valid UTF-8.
     pub fn to_str(&self) -> Result<&str, Utf8Error> {
         str::from_utf8(self.as_bytes())
@@ -71,6 +81,13 @@ impl NgxStr {
     /// Returns `true` if the [`NgxStr`] is empty, otherwise `false`.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+
+    // Compare the NgxStr with another NgxStr using case-insensitive UTF-8 comparison.
+    pub fn cmp_ignore_case_utf8(&self, other: &str) -> Ordering {
+        let self_slice = self.as_str().to_lowercase();
+        let other_slice = other.to_lowercase();
+        self_slice.cmp(&other_slice)
     }
 }
 
