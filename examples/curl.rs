@@ -4,9 +4,9 @@ use ngx::ffi::{
     ngx_uint_t, NGX_CONF_TAKE1, NGX_HTTP_LOC_CONF, NGX_HTTP_MODULE, NGX_RS_HTTP_LOC_CONF_OFFSET,
     NGX_RS_MODULE_SIGNATURE,
 };
-use ngx::http::MergeConfigError;
-use ngx::{core, core::Status, http, http::HTTPModule};
-use ngx::{http_request_handler, ngx_log_debug_http, ngx_modules, ngx_null_command, ngx_string};
+use ngx::{core, core::Status, http, http::HTTPModule, http::MergeConfigError};
+use ngx::{http_request_handler, ngx_log_debug, ngx_modules, ngx_null_command, ngx_string};
+
 use std::os::raw::{c_char, c_void};
 
 struct Module;
@@ -104,18 +104,30 @@ impl http::Merge for ModuleConfig {
 }
 
 http_request_handler!(curl_access_handler, |request: &mut http::Request| {
+    // we can check if a request is internal and disable handler
+    let log = request.log();
+    ngx_log_debug!(log, "is internal: {}", request.is_internal());
+
+    if request.is_internal() {
+        return core::Status::NGX_DECLINED;
+    }
+    // get location config
     let co = unsafe { request.get_module_loc_conf::<ModuleConfig>(&ngx_http_curl_module) };
     let co = co.expect("module config is none");
 
-    ngx_log_debug_http!(request, "curl module enabled: {}", co.enable);
-
+    // check if module is enabled based on the location config
+    ngx_log_debug!(log, "curl module enabled: {}", co.enable);
+    if request.is_internal() {
+        return core::Status::NGX_DECLINED;
+    }
     match co.enable {
         true => {
-            if request.user_agent().as_bytes().starts_with(b"curl") {
-                http::HTTPStatus::FORBIDDEN.into()
-            } else {
-                core::Status::NGX_DECLINED
+            if let Some(ua) = request.user_agent() {
+                if ua.as_bytes().starts_with(b"curl") {
+                    return http::HTTPStatus::FORBIDDEN.into();
+                }
             }
+            return core::Status::NGX_DECLINED;
         }
         false => core::Status::NGX_DECLINED,
     }

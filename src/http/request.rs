@@ -109,6 +109,10 @@ impl Request {
         std::ptr::eq(self, main)
     }
 
+    pub fn is_internal(&self) -> bool {
+        self.0.internal() != 0
+    }
+
     /// Request pool.
     pub fn pool(&self) -> Pool {
         // SAFETY: This request is allocated from `pool`, thus must be a valid pool.
