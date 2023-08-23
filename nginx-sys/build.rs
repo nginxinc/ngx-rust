@@ -15,7 +15,7 @@ use tar::Archive;
 use which::which;
 
 /// The default version of zlib to use if the `ZLIB_VERSION` environment variable is not present
-const ZLIB_DEFAULT_VERSION: &str = "1.2.13";
+const ZLIB_DEFAULT_VERSION: &str = "1.3";
 const ZLIB_GPG_SERVER_AND_KEY_ID: (&str, &str) = ("keyserver.ubuntu.com", "783FCD8E58BCAFBA");
 const ZLIB_DOWNLOAD_URL_PREFIX: &str = "https://www.zlib.net";
 /// The default version of pcre2 to use if the `PCRE2_VERSION` environment variable is not present
