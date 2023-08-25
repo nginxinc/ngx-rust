@@ -111,6 +111,7 @@ impl Request {
         std::ptr::eq(self, main)
     }
 
+    /// Returns `true` if request is internal
     pub fn is_internal(&self) -> bool {
         self.0.internal() != 0
     }

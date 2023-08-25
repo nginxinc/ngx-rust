@@ -5,9 +5,9 @@ use duct::cmd;
 use flate2::read::GzDecoder;
 use std::error::Error as StdError;
 use std::ffi::OsString;
-use std::fs::{read_to_string, File};
+use std::fs::File;
+use std::io::Error as IoError;
 use std::io::ErrorKind::NotFound;
-use std::io::{Error as IoError, Write};
 use std::path::{Path, PathBuf};
 use std::process::Output;
 use std::{env, thread};
@@ -39,14 +39,13 @@ const NGX_DEFAULT_VERSION: &str = "1.23.3";
 const NGX_GPG_SERVER_AND_KEY_ID: (&str, &str) = ("keyserver.ubuntu.com", "A0EA981B66B0D967");
 const NGX_DOWNLOAD_URL_PREFIX: &str = "https://nginx.org/download";
 /// If you are adding another dependency, you will need to add the server/public key tuple below.
-const ALL_SERVERS_AND_PUBLIC_KEY_IDS: [(&str, &str); 4] = [
+const ALL_DEVPS_SERVERS_AND_PUBLIC_KEY_IDS: [(&str, &str); 3] = [
     ZLIB_GPG_SERVER_AND_KEY_ID,
     PCRE2_GPG_SERVER_AND_KEY_ID,
     OPENSSL_GPG_SERVER_AND_KEY_IDS,
-    NGX_GPG_SERVER_AND_KEY_ID,
 ];
-/// List of configure switches specifying the modules to build nginx with
-const NGX_BASE_MODULES: [&str; 20] = [
+/// List of configure switches specifying the modules to build NGINX with
+const NGX_BASE_MODULES: [&str; 19] = [
     "--with-compat",
     "--with-http_addition_module",
     "--with-http_auth_request_module",
@@ -56,7 +55,6 @@ const NGX_BASE_MODULES: [&str; 20] = [
     "--with-http_random_index_module",
     "--with-http_realip_module",
     "--with-http_secure_link_module",
-    "--with-http_slice_module",
     "--with-http_slice_module",
     "--with-http_ssl_module",
     "--with-http_stub_status_module",
@@ -69,18 +67,22 @@ const NGX_BASE_MODULES: [&str; 20] = [
     "--with-threads",
 ];
 /// Additional configuration flags to use when building on Linux.
-const NGX_LINUX_ADDITIONAL_OPTS: [&str; 3] = [
+const NGX_LINUX_ADDITIONAL_OPTS: [&str; 1] = [
     "--with-file-aio",
-    "--with-cc-opt=-g -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC",
-    "--with-ld-opt=-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie",
+    // TODO: do we really need, ngx-rust is not intended to compile nginx, we need only header files
+    // "--with-cc-opt='-g,-fstack-protector-strong,-Wformat,-Werror=format-security,-Wp,-D_FORTIFY_SOURCE=2,-fPIC'",
+    // "--with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--as-needed,-pie'",
 ];
-const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 9] = [
+/// List of env vars that trigger builds.rs to re-run (rerun-if-env-changed)
+const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 11] = [
     "DEBUG",
     "OUT_DIR",
     "ZLIB_VERSION",
     "PCRE2_VERSION",
     "OPENSSL_VERSION",
     "NGX_VERSION",
+    "NGX_SRC_DIR",
+    "NGX_CONFIGURE_ARGS",
     "CARGO_CFG_TARGET_OS",
     "CARGO_MANIFEST_DIR",
     "CARGO_TARGET_TMPDIR",
@@ -89,14 +91,14 @@ const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 9] = [
 /// Function invoked when `cargo build` is executed.
 /// This function will download NGINX and all supporting dependencies, verify their integrity,
 /// extract them, execute autoconf `configure` for NGINX, compile NGINX and finally install
-/// NGINX in a subdirectory with the project.
+/// NGINX in a subdirectory with the project or use provided NGNINX source path
 fn main() -> Result<(), Box<dyn StdError>> {
-    // Create .cache directory
-    let cache_dir = make_cache_dir()?;
-    // Import GPG keys used to verify dependency tarballs
-    import_gpg_keys(&cache_dir)?;
-    // Configure and Compile NGINX
-    let (_nginx_install_dir, nginx_src_dir) = compile_nginx()?;
+    let src_dir = nginx_src_dir()?;
+
+    configure_nginx(&src_dir)?;
+
+    println!("cargo:rerun-if-changed={}/objs/Makefile", src_dir.display());
+
     // Hint cargo to rebuild if any of the these environment variables values change
     // because they will trigger a recompilation of NGINX with different parameters
     for var in ENV_VARS_TRIGGERING_RECOMPILE {
@@ -105,7 +107,7 @@ fn main() -> Result<(), Box<dyn StdError>> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=wrapper.h");
     // Read autoconf generated makefile for NGINX and generate Rust bindings based on its includes
-    generate_binding(nginx_src_dir);
+    generate_binding(src_dir);
     Ok(())
 }
 
@@ -117,12 +119,16 @@ fn generate_binding(nginx_source_dir: PathBuf) {
         .map(|path| format!("-I{}", path.to_string_lossy()))
         .collect();
 
+    println!("bindgen clang_args: {:?}", clang_args);
     let bindings = bindgen::Builder::default()
         // Bindings will not compile on Linux without block listing this item
         // It is worth investigating why this is
         .blocklist_item("IPPORT_RESERVED")
         // The input header we would like to generate bindings for.
         .header("wrapper.h")
+        .allowlist_type("ngx_.*")
+        .allowlist_function("ngx_.*")
+        .allowlist_var("ngx_.*|NGX_.*|nginx_.*")
         .clang_args(clang_args)
         .layout_tests(false)
         .generate()
@@ -190,12 +196,11 @@ fn nginx_archive_url() -> String {
 
 /// Returns a list of tuples containing the URL to a tarball archive and the GPG signature used
 /// to validate the integrity of the tarball.
-fn all_archives() -> Vec<(String, String)> {
+fn all_dep_archives() -> Vec<(String, String)> {
     vec![
         (zlib_archive_url(), format!("{}.asc", zlib_archive_url())),
         (pcre2_archive_url(), format!("{}.sig", pcre2_archive_url())),
         (openssl_archive_url(), format!("{}.asc", openssl_archive_url())),
-        (nginx_archive_url(), format!("{}.asc", nginx_archive_url())),
     ]
 }
 
@@ -211,6 +216,39 @@ fn source_output_dir(cache_dir: &Path) -> PathBuf {
             .join(format!("{}-{}", env::consts::OS, env::consts::ARCH))
     })
 }
+/// Returns path to NGINX source code
+/// If env NGX_SRC_DIR var is set use it, otherwise download NGINX OSS from the Internet
+fn nginx_src_dir() -> Result<PathBuf, Box<dyn StdError>> {
+    let nginx_src_dir = match env::var("NGX_SRC_DIR") {
+        Err(_) => {
+            // Create .cache directory
+            let cache_dir = make_cache_dir()?;
+            // Import GPG keys used to verify dependency tarballs
+            import_gpg_keys(&cache_dir, &[NGX_GPG_SERVER_AND_KEY_ID; 1])?;
+            let extract_output_base_dir = source_output_dir(&cache_dir);
+            if !extract_output_base_dir.exists() {
+                std::fs::create_dir_all(&extract_output_base_dir)?;
+            }
+            // download nginx from the Internet and extract it to the cache folder
+            let archive_url = nginx_archive_url();
+            let signature_url = format!("{}.asc", archive_url);
+            let archive_path = get_archive(&cache_dir, &archive_url, &signature_url)?;
+            let (_, output_dir) = extract_archive(&archive_path, &extract_output_base_dir)?;
+            output_dir
+        }
+        Ok(v) => PathBuf::from(v),
+    };
+    Ok(nginx_src_dir)
+}
+
+/// Returns Path to the dependency or panics is not found
+fn find_dependency_path<'a>(sources: &'a [(String, PathBuf)], name: &str) -> &'a Path {
+    sources
+        .iter()
+        .find(|(n, _)| n == name)
+        .map(|(_, p)| p.as_path())
+        .unwrap_or_else(|| panic!("Unable to find dependency [{name}] path"))
+}
 
 #[allow(clippy::ptr_arg)]
 /// Returns the path to install NGINX to
@@ -220,9 +258,9 @@ fn nginx_install_dir(base_dir: &PathBuf) -> PathBuf {
     base_dir.join("nginx").join(nginx_version).join(platform)
 }
 
-/// Imports all of the required GPG keys into the `.cache/.gnupu` directory in order to
+/// Imports GPG keys into the `.cache/.gnupu` directory in order to
 /// validate the integrity of the downloaded tarballs.
-fn import_gpg_keys(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
+fn import_gpg_keys(cache_dir: &Path, keys: &[(&str, &str)]) -> Result<(), Box<dyn StdError>> {
     if let Some(gpg) = gpg_path() {
         // We do not want to mess with the default gpg data for the running user,
         // so we store all gpg data with our cache directory.
@@ -231,7 +269,7 @@ fn import_gpg_keys(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
             std::fs::create_dir_all(&gnupghome)?;
         }
 
-        let keys_to_import = ALL_SERVERS_AND_PUBLIC_KEY_IDS.iter().filter(|(_, key_id)| {
+        let keys_to_import = keys.iter().filter(|(_, key_id)| {
             let key_id_record_file = gnupghome.join(format!("{key_id}.key"));
             !key_id_record_file.exists()
         });
@@ -413,14 +451,16 @@ fn extract_archive(
     Ok((dependency_name, archive_output_dir))
 }
 
-/// Extract all of the tarballs into subdirectories within the source base directory.
-fn extract_all_archives(cache_dir: &Path) -> Result<Vec<(String, PathBuf)>, Box<dyn StdError>> {
-    let archives = all_archives();
+/// Extract dependencies of the tarballs into subdirectories within the source base directory.
+fn extract_all_dep_archives(cache_dir: &Path) -> Result<Vec<(String, PathBuf)>, Box<dyn StdError>> {
+    let archives = all_dep_archives();
     let mut sources = Vec::new();
     let extract_output_base_dir = source_output_dir(cache_dir);
     if !extract_output_base_dir.exists() {
         std::fs::create_dir_all(&extract_output_base_dir)?;
     }
+
+    import_gpg_keys(cache_dir, &ALL_DEVPS_SERVERS_AND_PUBLIC_KEY_IDS)?;
     for (archive_url, signature_url) in archives {
         let archive_path = get_archive(cache_dir, &archive_url, &signature_url)?;
         let (name, output_dir) = extract_archive(&archive_path, &extract_output_base_dir)?;
@@ -430,57 +470,62 @@ fn extract_all_archives(cache_dir: &Path) -> Result<Vec<(String, PathBuf)>, Box<
     Ok(sources)
 }
 
-/// Invoke external processes to run autoconf `configure` to generate a makefile for NGINX and
-/// then run `make install`.
-fn compile_nginx() -> Result<(PathBuf, PathBuf), Box<dyn StdError>> {
-    fn find_dependency_path<'a>(sources: &'a [(String, PathBuf)], name: &str) -> &'a PathBuf {
-        sources
-            .iter()
-            .find(|(n, _)| n == name)
-            .map(|(_, p)| p)
-            .unwrap_or_else(|| panic!("Unable to find dependency [{name}] path"))
-    }
-    let cache_dir = make_cache_dir()?;
-    let nginx_install_dir = nginx_install_dir(&cache_dir);
-    let sources = extract_all_archives(&cache_dir)?;
-    let zlib_src_dir = find_dependency_path(&sources, "zlib");
-    let openssl_src_dir = find_dependency_path(&sources, "openssl");
-    let pcre2_src_dir = find_dependency_path(&sources, "pcre2");
-    let nginx_src_dir = find_dependency_path(&sources, "nginx");
-    let nginx_configure_flags = nginx_configure_flags(&nginx_install_dir, zlib_src_dir, openssl_src_dir, pcre2_src_dir);
-    let nginx_binary_exists = nginx_install_dir.join("sbin").join("nginx").exists();
-    let autoconf_makefile_exists = nginx_src_dir.join("Makefile").exists();
-    // We find out how NGINX was configured last time, so that we can compare it to what
-    // we are going to configure it to this time. If there are no changes, then we can assume
-    // that we do not need to reconfigure and rebuild NGINX.
-    let build_info_path = nginx_src_dir.join("last-build-info");
-    let current_build_info = build_info(&nginx_configure_flags);
-    let build_info_no_change = if build_info_path.exists() {
-        read_to_string(&build_info_path).map_or(false, |s| s == current_build_info)
-    } else {
-        false
+/// Executes `configure` script and `make build` for NGINX if wasn't ran previously
+/// Reads env NGX_CONFIGURE_ARGS var or uses predefnied options and dependecies
+fn configure_nginx(nginx_src_dir: &PathBuf) -> Result<(), Box<dyn StdError>> {
+    let flags = match env::var("NGX_CONFIGURE_ARGS") {
+        Ok(v) => v,
+        Err(_) => {
+            let cache_dir = make_cache_dir()?;
+            let nginx_install_dir = nginx_install_dir(&cache_dir);
+            let sources = extract_all_dep_archives(&cache_dir)?;
+            let zlib_src_dir = find_dependency_path(&sources, "zlib");
+            let openssl_src_dir = find_dependency_path(&sources, "openssl");
+            let pcre2_src_dir = find_dependency_path(&sources, "pcre2");
+            let args = nginx_configure_flags(&nginx_install_dir, zlib_src_dir, openssl_src_dir, pcre2_src_dir);
+            args.join(" ")
+        }
     };
 
-    println!("NGINX already installed: {nginx_binary_exists}");
-    println!("NGINX autoconf makefile already created: {autoconf_makefile_exists}");
-    println!("NGINX build info changed: {}", !build_info_no_change);
+    let autoconf_makefile_exists = autoconf_exists(nginx_src_dir);
+    // NGINX binary file is in objs folder after `make build`
+    let nginx_binary_exists = nginx_src_dir.join("objs").join("nginx").exists();
 
-    if !nginx_binary_exists || !autoconf_makefile_exists || !build_info_no_change {
-        std::fs::create_dir_all(&nginx_install_dir)?;
-        configure(nginx_configure_flags, nginx_src_dir)?;
-        make(nginx_src_dir, "install")?;
-        let mut output = File::create(build_info_path)?;
-        // Store the configure flags of the last successful build
-        output.write_all(current_build_info.as_bytes())?;
+    println!("NGINX autoconf makefile already created: {autoconf_makefile_exists}");
+    println!("NGINX source folder: {:?}", nginx_src_dir);
+    println!("NGINX already built: {nginx_binary_exists}");
+    println!("NGINX configure flags: {flags}");
+
+    // TODO: a problem: NGX_SRC_DIR was provided and user already ran configure/build
+    // but did not provide NGX_CONFIGURE_ARGS and the flags used are different with our default.
+    // what do to?
+    if !autoconf_makefile_exists {
+        run_configure_nginx(nginx_src_dir, &flags)?;
     }
-    Ok((nginx_install_dir, nginx_src_dir.to_owned()))
+
+    // TODO: a problem why we need to ran build - openssl needs to be configured if it is used,
+    // potentially openssl src path can be whatever NGX_CONFIGURE_ARGS or defaults to the OS
+    // but when `configure` is ran for nginx it doesn't configure openssl. openssl is configured only when
+    // running make build. if make build wasn't run then openssl is not configured and rust bingen can
+    // 'Unable to generate bindings fails like: ClangDiagnostic("<ommited>.cache/src/macos-x86_64/nginx-1.23.3/src/event/ngx_event_openssl.h:17:10: fatal error: 'openssl/ssl.h' file not found\n")',
+    // this is because objs/Makefile contains
+    // `-I/"<ommited>.cache/src/macos-x86_64/openssl-3.0.7/.openssl/include`, where `.openssl/include` is result of configuring openssl
+    // so let's check and ran make build at least once
+    if !nginx_binary_exists {
+        // at least once let's run make
+        // when NGX_CONFIGURE_ARGS provided don't install it as we hmay not trust this
+        if env::var("NGX_CONFIGURE_ARGS").is_ok() {
+            make(nginx_src_dir, "build")?;
+        } else {
+            make(nginx_src_dir, "install")?;
+        }
+    }
+    Ok(())
 }
 
-/// Returns the options in which NGINX was built with
-fn build_info(nginx_configure_flags: &[String]) -> String {
-    // Flags should contain strings pointing to OS/platform as well as dependency versions,
-    // so if any of that changes, it can trigger a rebuild
-    nginx_configure_flags.join(" ")
+/// check if nginx was autoconfigured already by checking Makefile
+fn autoconf_exists(nginx_src_dir: &Path) -> bool {
+    nginx_src_dir.join("Makefile").exists()
 }
 
 /// Generate the flags to use with autoconf `configure` for NGINX based on the downloaded
@@ -500,14 +545,13 @@ fn nginx_configure_flags(
         )
     }
     let modules = || -> Vec<String> {
-        let mut modules = vec![
-            format_source_path("--with-zlib", zlib_src_dir),
-            format_source_path("--with-pcre", pcre2_src_dir),
-            format_source_path("--with-openssl", openssl_src_dir),
-        ];
+        let mut modules = Vec::new();
         for module in NGX_BASE_MODULES {
             modules.push(module.to_string());
         }
+        modules.push(format_source_path("--with-zlib", zlib_src_dir));
+        modules.push(format_source_path("--with-pcre", pcre2_src_dir));
+        modules.push(format_source_path("--with-openssl", openssl_src_dir));
         modules
     };
     let mut nginx_opts = vec![format_source_path("--prefix", nginx_install_dir)];
@@ -523,28 +567,39 @@ fn nginx_configure_flags(
     for flag in modules() {
         nginx_opts.push(flag);
     }
-
     nginx_opts
 }
 
 /// Run external process invoking autoconf `configure` for NGINX.
-fn configure(nginx_configure_flags: Vec<String>, nginx_src_dir: &Path) -> std::io::Result<Output> {
-    let flags = nginx_configure_flags
-        .iter()
-        .map(OsString::from)
-        .collect::<Vec<OsString>>();
-    let configure_executable = nginx_src_dir.join("configure");
+fn run_configure_nginx(nginx_src_dir: &Path, flags: &str) -> std::io::Result<Output> {
+    let mut configure_executable = nginx_src_dir.join("auto").join("configure");
     if !configure_executable.exists() {
-        panic!(
-            "Unable to find NGINX configure script at: {}",
-            configure_executable.to_string_lossy()
-        );
+        println!("checking NGINX configure on the top level...");
+        // in some cases configure is located at the top level (gzip sources download from the nginx.org)
+        configure_executable = nginx_src_dir.join("configure");
+
+        if !configure_executable.exists() {
+            panic!(
+                "Unable to find NGINX configure script at: {}",
+                configure_executable.to_string_lossy()
+            );
+        }
     }
     println!(
-        "Running NGINX configure script with flags: {:?}",
-        nginx_configure_flags.join(" ")
+        "NGINX configure script was found: {}",
+        configure_executable.to_string_lossy()
     );
-    duct::cmd(configure_executable, flags)
+    // FIXME: it might cause an issue incorectly splitting argumens
+    // if it contains `--with-cc-opt='-g -fstack-protector-strong'`
+    // then it would split in ["--with-cc-opt='-g", "-fstack-protector-strong"] which is not correct,
+    // there is no such argument `-fstack-protector-strong` for nginx's configure script
+    // instead probably best is to use CFLAGS env or other way..
+    let args = flags
+        .split_ascii_whitespace()
+        .map(OsString::from)
+        .collect::<Vec<OsString>>();
+
+    duct::cmd(&configure_executable, args)
         .dir(nginx_src_dir)
         .stderr_to_stdout()
         .run()
@@ -560,7 +615,7 @@ fn make(nginx_src_dir: &Path, arg: &str) -> std::io::Result<Output> {
         _ => Err(IoError::new(NotFound, "Unable to find make in path (gmake or make)")),
     }?;
 
-    // Level of concurrency to use when building nginx - cargo nicely provides this information
+    // Level of concurrency to use when building NGINX - cargo nicely provides this information
     let num_jobs = match env::var("NUM_JOBS") {
         Ok(s) => s.parse::<usize>().ok(),
         Err(_) => thread::available_parallelism().ok().map(|n| n.get()),
@@ -577,8 +632,8 @@ fn make(nginx_src_dir: &Path, arg: &str) -> std::io::Result<Output> {
 }
 
 /// Reads through the makefile generated by autoconf and finds all of the includes
-/// used to compile nginx. This is used to generate the correct bindings for the
-/// nginx source code.
+/// used to compile NGINX. This is used to generate the correct bindings for the
+/// NGINX source code.
 fn parse_includes_from_makefile(nginx_autoconf_makefile_path: &PathBuf) -> Vec<PathBuf> {
     fn extract_include_part(line: &str) -> &str {
         line.strip_suffix('\\').map_or(line, |s| s.trim())

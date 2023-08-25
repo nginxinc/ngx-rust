@@ -1,21 +1,18 @@
-use crate::ffi::{
-    ngx_http_headers_in_t, ngx_http_headers_out_t, ngx_list_part_t, ngx_list_t, ngx_pool_t, ngx_table_elt_t,
-    ngx_uint_t, u_char,
-};
-use crate::ngx_string;
-use std::ffi::CString;
-use std::fmt;
-use std::ptr;
+use crate::ffi::{ngx_list_part_t, ngx_list_t, ngx_pool_t, ngx_table_elt_t, ngx_uint_t};
 
+use std::fmt;
+
+/// Represents an HTTP header.
 pub struct Header(*mut ngx_table_elt_t, *mut ngx_pool_t);
 
 impl Header {
+    /// Set the header value.
     pub fn set_value(&mut self, value: &str) {
         // we can use pool to allocate and then copy
-        unsafe { self.0.as_mut() }.map(|table| {
+        if let Some(table) = unsafe { self.0.as_mut() } {
             table.value.len = value.len() as _;
-            table.value.data = crate::ffi::str_to_uchar(self.1, value);
-        });
+            table.value.data = unsafe { crate::ffi::str_to_uchar(self.1, value) };
+        };
 
         // Alternative way is using CString and transfer ownership.
         // unsafe { self.0.as_mut() }.map(|table| {
@@ -26,43 +23,36 @@ impl Header {
         // });
     }
 
+    /// Set the header name.
     pub fn set_key(&mut self, key: &str) {
-        // we can use pool to allocate and then copy
-        unsafe { self.0.as_mut() }.map(|table| {
+        if let Some(table) = unsafe { self.0.as_mut() } {
             table.key.len = key.len() as _;
-            table.key.data = crate::ffi::str_to_uchar(self.1, key);
-            table.lowcase_key = crate::ffi::str_to_uchar(self.1, key.to_lowercase().as_str());
-        });
+            table.key.data = unsafe { crate::ffi::str_to_uchar(self.1, key) };
+            table.lowcase_key = unsafe { crate::ffi::str_to_uchar(self.1, key.to_lowercase().as_str()) };
+        };
     }
 
+    /// Set hash. 0 means header would be ignored by NGINX
     pub fn set_hash(&mut self, hash: ngx_uint_t) {
-        unsafe { self.0.as_mut() }.map(|table| {
+        if let Some(table) = unsafe { self.0.as_mut() } {
             table.hash = hash;
-        });
+        }
     }
 
+    /// Returns value of the header.
     pub fn value(&self) -> &str {
-        unsafe {
-            std::str::from_utf8(std::slice::from_raw_parts(
-                unsafe { *self.0 }.value.data,
-                unsafe { *self.0 }.value.len as usize,
-            ))
-            .unwrap()
-        }
+        unsafe { std::str::from_utf8(std::slice::from_raw_parts((*self.0).value.data, (*self.0).value.len)).unwrap() }
     }
 
+    /// Returns name of the header.
     pub fn key(&self) -> &str {
-        unsafe {
-            std::str::from_utf8(std::slice::from_raw_parts(
-                (*self.0).key.data,
-                (*self.0).key.len as usize,
-            ))
-            .unwrap()
-        }
+        unsafe { std::str::from_utf8(std::slice::from_raw_parts((*self.0).key.data, (*self.0).key.len)).unwrap() }
     }
+
+    /// Returns lowercases header name
     pub fn lowercase_key(&self) -> Option<&str> {
         unsafe {
-            let byte_slice = std::slice::from_raw_parts_mut(unsafe { *self.0 }.lowcase_key, unsafe { *self.0 }.key.len);
+            let byte_slice = std::slice::from_raw_parts_mut((*self.0).lowcase_key, (*self.0).key.len);
             if let Ok(utf8_str) = std::str::from_utf8(byte_slice) {
                 Some(utf8_str)
             } else {
@@ -72,6 +62,7 @@ impl Header {
         }
     }
 
+    /// Returns hash of the header
     pub fn hash(&self) -> ngx_uint_t {
         unsafe { *self.0 }.hash
     }
@@ -95,6 +86,10 @@ pub struct HeadersIterator {
 }
 
 impl HeadersIterator {
+    /// Create a new [`HeadersIterator`] from an [`*const ngx_list_t`]
+    /// # Safety
+    ///
+    /// The caller has provided a valid non-null pointer to a valid `ngx_list_t`
     pub unsafe fn new(list: *const ngx_list_t) -> Self {
         let part: *const ngx_list_part_t = &(*list).part;
         let p = (*list).pool;
