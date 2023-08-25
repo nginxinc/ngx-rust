@@ -41,7 +41,6 @@ help:
 
 .PHONY: clean
 clean: clean-cache; $(info $(M) cleaning...)	@ ## Cleanup everything
-	$Q rm -rf $(CURDIR)/target
 	$Q $(CARGO) clean
 
 .PHONY: clean-cache
