@@ -53,10 +53,6 @@ jobs:
         continue-on-error: false
         with:
           path: |
-            .cache/.gnupg
-            .cache/*.tar.gz
-            .cache/*.tar.asc
-            .cache/*.tar.sig
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
