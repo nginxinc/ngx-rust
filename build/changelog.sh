@@ -27,7 +27,7 @@ fi
 if command -v gh > /dev/null; then
   LAST_RELEASE="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 | ${GREP} -E 'v[0-9]+\.[0-9]+\.[0-9]+' | cut -f1 | ${GREP} -v "${VERSION}" || true)"
 else
-  LAST_RELEASE="$(git tag --list v* | ${GREP} -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort --version-sort --field-separator=. --reverse | ${GREP} -v "${VERSION}" | head -n1 || true)"
+  LAST_RELEASE="$(git tag --list 'v*' | ${GREP} -E '^v[0-9]+\.[0-9]+\.[0-9]+.*$' | sort --version-sort --field-separator=. --reverse | ${GREP} -v "${VERSION}" | head -n1 || true)"
 fi
 
 if [ -z "${LAST_RELEASE}" ]; then
