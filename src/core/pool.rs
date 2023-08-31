@@ -36,7 +36,7 @@ impl Pool {
     pub fn create_buffer_from_str(&mut self, str: &str) -> Option<TemporaryBuffer> {
         let mut buffer = self.create_buffer(str.len())?;
         unsafe {
-            let mut buf = buffer.as_ngx_buf_mut();
+            let buf = buffer.as_ngx_buf_mut();
             ptr::copy_nonoverlapping(str.as_ptr(), (*buf).pos, str.len());
             (*buf).last = (*buf).pos.add(str.len());
         }
