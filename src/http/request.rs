@@ -211,8 +211,12 @@ impl Request {
     /// Client HTTP [User-Agent].
     ///
     /// [User-Agent]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent
-    pub fn user_agent(&self) -> &NgxStr {
-        unsafe { NgxStr::from_ngx_str((*self.0.headers_in.user_agent).value) }
+    pub fn user_agent(&self) -> Option<&NgxStr> {
+        if !self.0.headers_in.user_agent.is_null() {
+            unsafe { Some(NgxStr::from_ngx_str((*self.0.headers_in.user_agent).value)) }
+        } else {
+            None
+        }
     }
 
     /// Set HTTP status of response.
