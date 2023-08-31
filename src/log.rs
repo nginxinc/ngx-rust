@@ -199,9 +199,9 @@ mod tests {
         let mock = MockLog { log_level: 16 };
 
         let mut r = check_mask(DebugMask::Core, mock.log_level);
-        assert!(r == true);
+        assert!(r);
 
         r = check_mask(DebugMask::Alloc, mock.log_level);
-        assert!(r == false);
+        assert!(!r);
     }
 }

@@ -341,7 +341,7 @@ impl Request {
         };
 
         // previously call of ngx_http_subrequest() would ensure that the pointer is not null anymore
-        let mut sr = unsafe { &mut *psr };
+        let sr = unsafe { &mut *psr };
 
         /*
          * allocate fake request body to avoid attempts to read it and to make
