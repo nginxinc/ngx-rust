@@ -36,7 +36,7 @@ impl Pool {
     pub fn create_buffer_from_str(&mut self, str: &str) -> Option<TemporaryBuffer> {
         let mut buffer = self.create_buffer(str.len())?;
         unsafe {
-            let buf = buffer.as_ngx_buf_mut();
+            let buf = buffer.as_ngx_buf_mut_ptr();
             ptr::copy_nonoverlapping(str.as_ptr(), (*buf).pos, str.len());
             (*buf).last = (*buf).pos.add(str.len());
         }
@@ -47,7 +47,7 @@ impl Pool {
     ///
     /// Returns `Some(MemoryBuffer)` if the buffer is successfully created, or `None` if allocation fails.
     pub fn create_buffer_from_static_str(&mut self, str: &'static str) -> Option<MemoryBuffer> {
-        let buf = self.calloc_type::<ngx_buf_t>();
+        let buf = self.calloc_type_mut_ptr::<ngx_buf_t>();
         if buf.is_null() {
             return None;
         }
@@ -87,29 +87,29 @@ impl Pool {
     /// Allocates memory from the pool of the specified size.
     ///
     /// Returns a raw pointer to the allocated memory.
-    pub fn alloc(&mut self, size: usize) -> *mut c_void {
+    pub fn alloc_mut_ptr(&mut self, size: usize) -> *mut c_void {
         unsafe { ngx_palloc(self.0, size) }
     }
 
     /// Allocates memory for a type from the pool.
     ///
     /// Returns a typed pointer to the allocated memory.
-    pub fn alloc_type<T: Copy>(&mut self) -> *mut T {
-        self.alloc(mem::size_of::<T>()) as *mut T
+    pub fn alloc_type_mut_ptr<T: Copy>(&mut self) -> *mut T {
+        self.alloc_mut_ptr(mem::size_of::<T>()) as *mut T
     }
 
     /// Allocates zeroed memory from the pool of the specified size.
     ///
     /// Returns a raw pointer to the allocated memory.
-    pub fn calloc(&mut self, size: usize) -> *mut c_void {
+    pub fn calloc_mut_ptr(&mut self, size: usize) -> *mut c_void {
         unsafe { ngx_pcalloc(self.0, size) }
     }
 
     /// Allocates zeroed memory for a type from the pool.
     ///
     /// Returns a typed pointer to the allocated memory.
-    pub fn calloc_type<T: Copy>(&mut self) -> *mut T {
-        self.calloc(mem::size_of::<T>()) as *mut T
+    pub fn calloc_type_mut_ptr<T: Copy>(&mut self) -> *mut T {
+        self.calloc_mut_ptr(mem::size_of::<T>()) as *mut T
     }
 
     /// Allocates memory for a value of a specified type and adds a cleanup handler to the memory pool.
@@ -118,9 +118,9 @@ impl Pool {
     ///
     /// # Safety
     /// This function is marked as unsafe because it involves raw pointer manipulation.
-    pub fn allocate<T>(&mut self, value: T) -> *mut T {
+    pub fn allocate_mut_ptr<T>(&mut self, value: T) -> *mut T {
         unsafe {
-            let p = self.alloc(mem::size_of::<T>()) as *mut T;
+            let p = self.alloc_mut_ptr(mem::size_of::<T>()) as *mut T;
             ptr::write(p, value);
             if self.add_cleanup_for_value(p).is_err() {
                 ptr::drop_in_place(p);

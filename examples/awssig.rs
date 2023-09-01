@@ -17,7 +17,7 @@ impl HTTPModule for Module {
     type LocConf = ModuleConfig;
 
     unsafe extern "C" fn postconfiguration(cf: *mut ngx_conf_t) -> ngx_int_t {
-        let cmcf = ngx_http_conf_get_module_main_conf(cf, &ngx_http_core_module);
+        let cmcf = ngx_http_conf_get_module_main_conf_mut_ptr(cf, &ngx_http_core_module);
 
         let h = ngx_array_push(&mut (*cmcf).phases[ngx_http_phases_NGX_HTTP_PRECONTENT_PHASE as usize].handlers)
             as *mut ngx_http_handler_pt;

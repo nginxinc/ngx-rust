@@ -123,7 +123,7 @@ impl Request {
     /// [`ngx_http_upstream_t`]: is best described in
     /// https://nginx.org/en/docs/dev/development_guide.html#http_request
     /// https://nginx.org/en/docs/dev/development_guide.html#http_load_balancing
-    pub fn upstream(&self) -> Option<*mut ngx_http_upstream_t> {
+    pub fn upstream_mut_ptr(&self) -> Option<*mut ngx_http_upstream_t> {
         if self.0.upstream.is_null() {
             return None;
         }
@@ -133,25 +133,25 @@ impl Request {
     /// Pointer to a [`ngx_connection_t`] client connection object.
     ///
     /// [`ngx_connection_t`]: https://nginx.org/en/docs/dev/development_guide.html#connection
-    pub fn connection(&self) -> *mut ngx_connection_t {
+    pub fn connection_mut_ptr(&self) -> *mut ngx_connection_t {
         self.0.connection
     }
 
     /// Pointer to a [`ngx_log_t`].
     ///
     /// [`ngx_log_t`]: https://nginx.org/en/docs/dev/development_guide.html#logging
-    pub fn log(&self) -> *mut ngx_log_t {
-        unsafe { (*self.connection()).log }
+    pub fn log_mut_ptr(&self) -> *mut ngx_log_t {
+        unsafe { (*self.connection_mut_ptr()).log }
     }
 
     /// Module location configuration.
-    fn get_module_loc_conf_ptr(&self, module: &ngx_module_t) -> *mut c_void {
+    fn get_module_loc_conf_mut_ptr(&self, module: &ngx_module_t) -> *mut c_void {
         unsafe { *self.0.loc_conf.add(module.ctx_index) }
     }
 
     /// Module location configuration.
     pub fn get_module_loc_conf<T>(&self, module: &ngx_module_t) -> Option<&T> {
-        let lc_prt = self.get_module_loc_conf_ptr(module) as *mut T;
+        let lc_prt = self.get_module_loc_conf_mut_ptr(module) as *mut T;
         if lc_prt.is_null() {
             return None;
         }
@@ -160,13 +160,13 @@ impl Request {
     }
 
     /// Get Module context pointer
-    fn get_module_ctx_ptr(&self, module: &ngx_module_t) -> *mut c_void {
+    fn get_module_ctx_mut_ptr(&self, module: &ngx_module_t) -> *mut c_void {
         unsafe { *self.0.ctx.add(module.ctx_index) }
     }
 
     /// Get Module context
     pub fn get_module_ctx<T>(&self, module: &ngx_module_t) -> Option<&T> {
-        let cf = self.get_module_ctx_ptr(module) as *mut T;
+        let cf = self.get_module_ctx_mut_ptr(module) as *mut T;
 
         if cf.is_null() {
             return None;
@@ -318,13 +318,15 @@ impl Request {
         let uri_ptr = unsafe { &mut ngx_str_t::from_str(self.0.pool, uri) as *mut _ };
         // -------------
         // allocate memory and set values for ngx_http_post_subrequest_t
-        let sub_ptr = self.pool().alloc(std::mem::size_of::<ngx_http_post_subrequest_t>());
+        let sub_ptr = self
+            .pool()
+            .alloc_mut_ptr(std::mem::size_of::<ngx_http_post_subrequest_t>());
 
         // assert!(sub_ptr.is_null());
         let post_subreq = sub_ptr as *const ngx_http_post_subrequest_t as *mut ngx_http_post_subrequest_t;
         unsafe {
             (*post_subreq).handler = Some(post_callback);
-            (*post_subreq).data = self.get_module_ctx_ptr(module); // WARN: safety! ensure that ctx is already set
+            (*post_subreq).data = self.get_module_ctx_mut_ptr(module); // WARN: safety! ensure that ctx is already set
         }
         // -------------
 
@@ -347,7 +349,9 @@ impl Request {
          * allocate fake request body to avoid attempts to read it and to make
          * sure real body file (if already read) won't be closed by upstream
          */
-        sr.request_body = self.pool().alloc(std::mem::size_of::<ngx_http_request_body_t>()) as *mut _;
+        sr.request_body = self
+            .pool()
+            .alloc_mut_ptr(std::mem::size_of::<ngx_http_request_body_t>()) as *mut _;
 
         if sr.request_body.is_null() {
             return Status::NGX_ERROR;

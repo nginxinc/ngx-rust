@@ -76,7 +76,7 @@ pub trait HTTPModule {
     /// guard against null inputs or risk runtime errors.
     unsafe extern "C" fn create_main_conf(cf: *mut ngx_conf_t) -> *mut c_void {
         let mut pool = Pool::from_ngx_pool((*cf).pool);
-        pool.allocate::<Self::MainConf>(Default::default()) as *mut c_void
+        pool.allocate_mut_ptr::<Self::MainConf>(Default::default()) as *mut c_void
     }
 
     /// # Safety
@@ -93,7 +93,7 @@ pub trait HTTPModule {
     /// guard against null inputs or risk runtime errors.
     unsafe extern "C" fn create_srv_conf(cf: *mut ngx_conf_t) -> *mut c_void {
         let mut pool = Pool::from_ngx_pool((*cf).pool);
-        pool.allocate::<Self::SrvConf>(Default::default()) as *mut c_void
+        pool.allocate_mut_ptr::<Self::SrvConf>(Default::default()) as *mut c_void
     }
 
     /// # Safety
@@ -115,7 +115,7 @@ pub trait HTTPModule {
     /// guard against null inputs or risk runtime errors.
     unsafe extern "C" fn create_loc_conf(cf: *mut ngx_conf_t) -> *mut c_void {
         let mut pool = Pool::from_ngx_pool((*cf).pool);
-        pool.allocate::<Self::LocConf>(Default::default()) as *mut c_void
+        pool.allocate_mut_ptr::<Self::LocConf>(Default::default()) as *mut c_void
     }
 
     /// # Safety
