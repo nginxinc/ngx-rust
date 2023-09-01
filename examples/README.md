@@ -16,6 +16,7 @@ This crate provides a couple of example using [ngx](https://crates.io/crates/ngx
 - [awssig.rs](./awssig.rs) - An example of NGINX dynamic module that can sign GET request using AWS Signature v4.
 - [curl](./curl.rs) - An example of the Access Phase NGINX dynamic module that blocks HTTP requests if `user-agent` header starts with `curl`.
 - [httporigdst](./httporigdst.rs) - A dynamic module recovers the original IP address and port number of the destination packet.
+- [upstream](./upstream.rs) - A dynamic module demonstrating the setup code to write an upstream filter or load balancer.
 
 To build all these examples simply run:
 
@@ -168,20 +169,27 @@ This module was converted from https://github.com/gabihodoroaga/nginx-upstream-m
 load_module "modules/upstream.so"
 
 http {
-  upstream backend {
-    server localhost:8081;
-
-    custom 32;
-  }
-
-  server {
-    listen 8080;
-    server_name _;
-
-    location / {
-      proxy_pass http://backend;
+    upstream backend {
+        server localhost:15501;
+        custom 32;
     }
-  }
+
+    server {
+        listen 15500;
+        server_name _;
+
+        location / {
+            proxy_pass http://backend;
+        }
+    }
+
+    server {
+        listen 15501;
+
+        location / {
+            return 418;
+        }
+    }
 }
 ```
 
@@ -215,4 +223,4 @@ http {
   nginx -t && nginx -s reload
   ```
 
-7. Test with `curl`. Traffic should pass to your listener on port 8081 (this could be another NGINX server for example). With debug logging enabled you should notice the "custom" log messages (see the source code for log examples).
+7. Test with `curl`. Traffic should pass to your listener on port 8081 (this could be another NGINX server for example). With debug logging enabled you should notice the upstream log messages (see the source code for log examples, prefixed with "CUSTOM UPSTREAM").

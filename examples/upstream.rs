@@ -14,14 +14,15 @@ use ngx::{
         ngx_http_upstream_init_peer_pt, ngx_http_upstream_init_pt, ngx_http_upstream_init_round_robin,
         ngx_http_upstream_module, ngx_http_upstream_srv_conf_t, ngx_http_upstream_t, ngx_int_t, ngx_module_t,
         ngx_peer_connection_t, ngx_str_t, ngx_uint_t, NGX_CONF_NOARGS, NGX_CONF_TAKE1, NGX_CONF_UNSET, NGX_ERROR,
-        NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF, NGX_LOG_DEBUG_HTTP, NGX_LOG_EMERG, NGX_RS_HTTP_SRV_CONF_OFFSET,
-        NGX_RS_MODULE_SIGNATURE,
+        NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF, NGX_LOG_EMERG, NGX_RS_HTTP_SRV_CONF_OFFSET, NGX_RS_MODULE_SIGNATURE,
     },
     http::{
         ngx_http_conf_get_module_srv_conf, ngx_http_conf_upstream_srv_conf_immutable,
         ngx_http_conf_upstream_srv_conf_mutable, HTTPModule, Merge, MergeConfigError, Request,
     },
-    http_upstream_peer_init, ngx_log_debug_http, ngx_log_debug_mask, ngx_modules, ngx_null_command, ngx_string,
+    http_upstream_init_peer_pt,
+    log::DebugMask,
+    ngx_log_debug_http, ngx_log_debug_mask, ngx_modules, ngx_null_command, ngx_string,
 };
 use std::{
     mem,
@@ -140,7 +141,7 @@ pub static mut ngx_http_upstream_custom_module: ngx_module_t = ngx_module_t {
 // http_upstream_init_custom_peer
 // The module's custom peer.init callback. On HTTP request the peer upstream get and free callbacks
 // are saved into peer data and replaced with this module's custom callbacks.
-http_upstream_peer_init!(
+http_upstream_init_peer_pt!(
     http_upstream_init_custom_peer,
     |request: &mut Request, us: *mut ngx_http_upstream_srv_conf_t| {
         ngx_log_debug_http!(request, "CUSTOM UPSTREAM request peer init");
@@ -194,7 +195,7 @@ unsafe extern "C" fn ngx_http_upstream_get_custom_peer(pc: *mut ngx_peer_connect
     let hcpd: *mut UpstreamPeerData = unsafe { mem::transmute(data) };
 
     ngx_log_debug_mask!(
-        NGX_LOG_DEBUG_HTTP,
+        DebugMask::Http,
         (*pc).log,
         "CUSTOM UPSTREAM get peer, try: {}, conn: {:p}",
         (*pc).tries,
@@ -208,7 +209,7 @@ unsafe extern "C" fn ngx_http_upstream_get_custom_peer(pc: *mut ngx_peer_connect
         return rc;
     }
 
-    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*pc).log, "CUSTOM UPSTREAM end get peer");
+    ngx_log_debug_mask!(DebugMask::Http, (*pc).log, "CUSTOM UPSTREAM end get peer");
     Status::NGX_OK.into()
 }
 
@@ -221,7 +222,7 @@ unsafe extern "C" fn ngx_http_upstream_free_custom_peer(
     data: *mut c_void,
     state: ngx_uint_t,
 ) {
-    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*pc).log, "CUSTOM UPSTREAM free peer");
+    ngx_log_debug_mask!(DebugMask::Http, (*pc).log, "CUSTOM UPSTREAM free peer");
 
     let hcpd: *mut UpstreamPeerData = unsafe { mem::transmute(data) };
 
@@ -229,7 +230,7 @@ unsafe extern "C" fn ngx_http_upstream_free_custom_peer(
 
     original_free_peer(pc, (*hcpd).data, state);
 
-    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*pc).log, "CUSTOM UPSTREAM end free peer");
+    ngx_log_debug_mask!(DebugMask::Http, (*pc).log, "CUSTOM UPSTREAM end free peer");
 }
 
 // ngx_http_upstream_init_custom
@@ -240,7 +241,7 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
     cf: *mut ngx_conf_t,
     us: *mut ngx_http_upstream_srv_conf_t,
 ) -> ngx_int_t {
-    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*cf).log, "CUSTOM UPSTREAM peer init_upstream");
+    ngx_log_debug_mask!(DebugMask::Http, (*cf).log, "CUSTOM UPSTREAM peer init_upstream");
 
     let maybe_conf: Option<*mut SrvConfig> =
         ngx_http_conf_upstream_srv_conf_mutable(us, &ngx_http_upstream_custom_module);
@@ -273,7 +274,7 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
     (*hccf).original_init_peer = (*us).peer.init;
     (*us).peer.init = Some(http_upstream_init_custom_peer);
 
-    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*cf).log, "CUSTOM UPSTREAM end peer init_upstream");
+    ngx_log_debug_mask!(DebugMask::Http, (*cf).log, "CUSTOM UPSTREAM end peer init_upstream");
     isize::from(Status::NGX_OK)
 }
 
@@ -286,7 +287,7 @@ unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
     cmd: *mut ngx_command_t,
     conf: *mut c_void,
 ) -> *mut c_char {
-    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*cf).log, "CUSTOM UPSTREAM module init");
+    ngx_log_debug_mask!(DebugMask::Http, (*cf).log, "CUSTOM UPSTREAM module init");
 
     let mut ccf = &mut (*(conf as *mut SrvConfig));
 
@@ -318,7 +319,7 @@ unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
 
     (*uscf).peer.init_upstream = Some(ngx_http_upstream_init_custom);
 
-    ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*cf).log, "CUSTOM UPSTREAM end module init");
+    ngx_log_debug_mask!(DebugMask::Http, (*cf).log, "CUSTOM UPSTREAM end module init");
     // NGX_CONF_OK
     std::ptr::null_mut()
 }
@@ -350,7 +351,7 @@ impl HTTPModule for Module {
 
         (*conf).max = NGX_CONF_UNSET as u32;
 
-        ngx_log_debug_mask!(NGX_LOG_DEBUG_HTTP, (*cf).log, "CUSTOM UPSTREAM end create_srv_conf");
+        ngx_log_debug_mask!(DebugMask::Http, (*cf).log, "CUSTOM UPSTREAM end create_srv_conf");
         conf as *mut c_void
     }
 }
