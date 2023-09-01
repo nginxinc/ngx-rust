@@ -16,6 +16,7 @@ This crate provides a couple of example using [ngx](https://crates.io/crates/ngx
 - [awssig.rs](./awssig.rs) - An example of NGINX dynamic module that can sign GET request using AWS Signature v4.
 - [curl](./curl.rs) - An example of the Access Phase NGINX dynamic module that blocks HTTP requests if `user-agent` header starts with `curl`.
 - [httporigdst](./httporigdst.rs) - A dynamic module recovers the original IP address and port number of the destination packet.
+- [upstream](./upstream.rs) - A dynamic module demonstrating the setup code to write an upstream filter or load balancer.
 
 To build all these examples simply run:
 
@@ -98,7 +99,7 @@ The following embedded variables are provided:
 
 1. Clone the git repository.
   ```
-  https://github.com/nginxinc/ngx-rust
+  git clone git@github.com:nginxinc/ngx-rust.git
   ```
 
 2. Compile the module from the cloned repo.
@@ -150,3 +151,76 @@ The following embedded variables are provided:
 ### Caveats
 
 This module only supports IPv4.
+
+## UPSTREAM - Example upstream / load balancing module for HTTP
+
+This module simply proxies requests through a custom load balancer to the previously configured balancer. This is for demonstration purposes only. As a module writer, you can start with this structure and adjust to your needs, then implement the proper algorithm for your usage.
+
+The module replaces the `peer` callback functions with its own, logs, and then calls through to the originally saved `peer` functions. This may look confusing at first, but rest assured, it's intentionally not implementing an algorithm of its own.
+
+### Attributions
+
+This module was converted from https://github.com/gabihodoroaga/nginx-upstream-module and also highly inspired by the same techniques used in NGINX source: `ngx_http_upstream_keepalive_module.c`.
+
+### Example Configuration
+#### HTTP
+
+```nginx configuration
+load_module "modules/upstream.so"
+
+http {
+    upstream backend {
+        server localhost:15501;
+        custom 32;
+    }
+
+    server {
+        listen 15500;
+        server_name _;
+
+        location / {
+            proxy_pass http://backend;
+        }
+    }
+
+    server {
+        listen 15501;
+
+        location / {
+            return 418;
+        }
+    }
+}
+```
+
+### Usage
+
+1. Clone the git repository.
+  ```
+  git clone git@github.com:nginxinc/ngx-rust.git
+  ```
+
+2. Compile the module from the cloned repo.
+  ```
+  cd ${CLONED_DIRECTORY}/ngx-rust
+  cargo buile --package=examples --example=upstream
+  ```
+
+3. Copy the shared object to the modules directory, /etc/nginx/modules.
+  ```
+  cp ./target/debug/examples/libupstream.so /etc/nginx/modules
+  ```
+
+4. Add the `load_module` directive to your configuration.
+  ```
+  load_module "modules/libupstream.so";
+  ```
+
+5. Add the example `server` and `upstream` block from the example above.
+
+6. Reload NGINX.
+  ```
+  nginx -t && nginx -s reload
+  ```
+
+7. Test with `curl`. Traffic should pass to your listener on port 8081 (this could be another NGINX server for example). With debug logging enabled you should notice the upstream log messages (see the source code for log examples, prefixed with "CUSTOM UPSTREAM").
