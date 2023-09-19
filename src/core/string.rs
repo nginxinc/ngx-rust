@@ -1,6 +1,7 @@
 use crate::ffi::*;
 
 use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::slice;
 use std::str::{self, Utf8Error};
 
@@ -51,9 +52,49 @@ impl NgxStr {
         slice::from_raw_parts(str.data, str.len).into()
     }
 
-    /// Access the [`NgxStr`] as a byte slice.
+    /// Converts the [`NgxStr`] to a byte slice.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ngx::core::NgxStr;
+    /// use ngx::ngx_string;
+    ///
+    /// let ngx_str = unsafe { NgxStr::from_ngx_str(ngx_string!("hello")) };
+    /// let bytes = ngx_str.as_bytes();
+    /// assert_eq!(bytes, &[104, 101, 108, 108, 111]); // "hello" in ASCII
+    /// ```
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
+    }
+    /// Converts the Nginx string reference to a Rust string slice (`&str`).
+    ///
+    /// # Safety
+    ///
+    /// This operation is marked as `unsafe` because it involves converting raw bytes to a
+    /// string slice. The safety of this operation depends on the validity of the underlying
+    /// bytes and the proper lifetime management of `NgxStr`.
+    ///
+    /// It's important to ensure that the bytes in the `NgxStr` are valid UTF-8 and that the
+    /// `NgxStr` instance is not used after its underlying data is deallocated.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ngx::core::NgxStr;
+    /// use ngx::ngx_string;
+    ///
+    /// let ngx_str = unsafe { NgxStr::from_ngx_str(ngx_string!("hello")) };
+    /// let rust_str: &str = ngx_str.as_str();
+    /// assert_eq!(rust_str, "hello");
+    /// ```
+    pub fn as_str(&self) -> &str {
+        // Safety: Converting the raw data to a string slice is unsafe, but as long
+        // as the lifetime of NgxStr is properly managed, this should be safe.
+        unsafe {
+            // let slice = std::slice::from_raw_parts(self.0.data, self.0.len);
+            std::str::from_utf8_unchecked(&self.0)
+        }
     }
 
     /// Yields a `&str` slice if the [`NgxStr`] contains valid UTF-8.
@@ -71,6 +112,13 @@ impl NgxStr {
     /// Returns `true` if the [`NgxStr`] is empty, otherwise `false`.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+
+    /// Compare the NgxStr with another &str using case-insensitive UTF-8 comparison.
+    pub fn cmp_ignore_case_utf8(&self, other: &str) -> Ordering {
+        let self_slice = self.as_str().to_lowercase();
+        let other_slice = other.to_lowercase();
+        self_slice.cmp(&other_slice)
     }
 }
 

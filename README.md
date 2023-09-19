@@ -5,7 +5,7 @@
 
 
 ## Project status
-This project is still a work in progress and not production ready.
+This project is still a work in progress and not production-ready.
 
 # Description
 
@@ -14,15 +14,21 @@ dynamic modules completely in Rust.
 
 In short, this SDK allows writing NGINX modules using the Rust language.
 
+It contains the following Rust crates:
+ * [nginx-sys](./nginx-sys) - allows to use ngx_* C functions via FFI when implementing modules. The `-sys` is used to follow a [naming convention](https://doc.rust-lang.org/cargo/reference/build-scripts.html#-sys-packages) to link with a C library.
+ * [ngx](./src) - it an opinionated SDK to make it a bit easer to use [nginx-sys](./nginx-sys) crate. Implements `macro_rules`, provides a way to build a dynamic module without any C code (see `ngx_modules!` macro_rule).
+
 ## Build
 
 NGINX modules can be built against a particular version of NGINX. The following environment variables can be used to specify a particular version of NGINX or an NGINX dependency:
 
-* `ZLIB_VERSION` (default 1.2.13) -
+* `ZLIB_VERSION` (default 1.3)
 * `PCRE2_VERSION` (default 10.42)
 * `OPENSSL_VERSION` (default 3.0.7)
 * `NGX_VERSION` (default 1.23.3) - NGINX OSS version
 * `NGX_DEBUG` (default to false)-  if set to true, then will compile NGINX `--with-debug` option
+* `NGX_SRC_DIR` (default not set) - When the value is set, then use this NGINX source code folder to build bindings from
+* `NGX_CONFIGURE_ARGS` (default not set) - When the value is set, then run the NGINX configure script with
 
 For example, this is how you would compile the [examples](examples) using a specific version of NGINX and enabling
 debugging:
@@ -30,7 +36,7 @@ debugging:
 NGX_DEBUG=true NGX_VERSION=1.23.0 cargo build --package=examples --examples --release
 ```
 
-To build Linux-only modules, use the "linux" feature:
+To build Linux-only modules, use the `linux` feature:
 ```
 cargo build --package=examples --examples --features=linux --release
 ```
@@ -43,13 +49,13 @@ the SDK. You can start NGINX directly from this directory if you want to test th
 
 ### Mac OS dependencies
 
-In order to use the optional GNU make build process on MacOS, you will need to install additional tools. This can be
+To use the optional GNU build process on MacOS, you will need to install additional tools. This can be
 done via [homebrew](https://brew.sh/) with the following command:
 ```
 brew install make openssl grep
 ```
 
-Additionally, you may need to set up LLVM and clang. Typically, this is done as follows:
+Additionally, you may need to set up LLVM and Clang. Typically, this is done as follows:
 
 ```
 # make sure xcode tools are installed
@@ -64,26 +70,25 @@ See the [Dockerfile](Dockerfile) for dependencies as an example of required pack
 
 ### Build example
 
-Example modules are available in [examples](examples) folder. You can use `cargo build --package=examples --examples` to build these examples. After building, you can find the `.so` or `.dylib` in the `target/debug` folder. Add `--features=linux` to build linux specific modules. **NOTE**: adding the "linux" feature on MacOS will cause a build failure.
+Example modules are available in [examples](examples) folder. You can use `cargo build --package=examples --examples` to build these examples. After building, you can find the `.so` or `.dylib` in the `target/debug` folder. Add `--features=linux` to build Linux-specific modules. **NOTE**: adding the `linux` feature on MacOS will cause a build failure.
 
-For example (all examples plus linux specific):
+For example (all examples plus Linux specific):
 `cargo build --packages=examples --examples --features=linux`
 
 ### Docker
 
 We provide a multistage [Dockerfile](Dockerfile):
 
-    # build all dynamic modules examples and specify NGINX version to use
+    # Build all dynamic module examples and specify the NGINX version to use
     docker buildx build --build-arg NGX_VERSION=1.23.3 -t ngx-rust .
 
     # start NGINX using [curl](examples/curl.conf) module example:
-    docker run --rm -d  -p 8000:8000 ngx-rust nginx -c examples/curl.conf
+    docker run --name curl --rm -d  -p 8000:8000 ngx-rust nginx -c examples/curl.conf
 
-    # test it - you should see 403 Forbidden
+    # Test it - you should see 403 Forbidden
     curl http://127.0.0.1:8000 -v -H "user-agent: curl"
 
-
-    # test it - you should see 404 Not Found
+    # Test it - you should see 404 Not Found
     curl http://127.0.0.1:8000 -v -H "user-agent: foo"
 
 ## Usage
@@ -124,15 +129,15 @@ http {
 ```
 
 ## Support
-This SDK is currently unstable. Right now, our primary goal is collect feedback and stabilize it be before
-offering support. Feel free [contributing](CONTRIBUTING.md) by creating issues, PRs, or github discussions.
+This SDK is currently unstable. Right now, our primary goal is to collect feedback and stabilize it
+before offering support. Feel free to [contribute](CONTRIBUTING.md) by creating issues, PRs, or GitHub discussions.
 
 Currently, the only supported platforms are:
 * Darwin (Mac OSX)
 * Linux platform
 
 ## Roadmap
-If you have ideas for releases in the future, please suggest them in the github discussions.
+If you have ideas for releases in the future, please suggest them in the GitHub discussions.
 
 ## Contributing
 

@@ -8,6 +8,8 @@ use std::os::raw::c_void;
 use std::error::Error;
 use std::str::FromStr;
 
+use super::HeadersIterator;
+
 /// Define a static request handler.
 ///
 /// Handlers are expected to take a single [`Request`] argument and return a [`Status`].
@@ -107,6 +109,11 @@ impl Request {
     pub fn is_main(&self) -> bool {
         let main = self.0.main.cast();
         std::ptr::eq(self, main)
+    }
+
+    /// Returns `true` if request is internal
+    pub fn is_internal(&self) -> bool {
+        self.0.internal() != 0
     }
 
     /// Request pool.
@@ -358,14 +365,14 @@ impl Request {
 
     /// Iterate over headers_in
     /// each header item is (String, String) (copied)
-    pub fn headers_in_iterator(&self) -> NgxListIterator {
-        unsafe { list_iterator(&self.0.headers_in.headers) }
+    pub fn headers_in_iterator(&self) -> HeadersIterator {
+        unsafe { HeadersIterator::new(&self.0.headers_in.headers) }
     }
 
     /// Iterate over headers_out
     /// each header item is (String, String) (copied)
-    pub fn headers_out_iterator(&self) -> NgxListIterator {
-        unsafe { list_iterator(&self.0.headers_out.headers) }
+    pub fn headers_out_iterator(&self) -> HeadersIterator {
+        unsafe { HeadersIterator::new(&self.0.headers_out.headers) }
     }
 }
 
@@ -376,67 +383,6 @@ impl Request {
 impl fmt::Debug for Request {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Request").field("request_", &self.0).finish()
-    }
-}
-
-/// Iterator for `ngx_list_t` types.
-///
-/// Implementes the std::iter::Iterator trait.
-pub struct NgxListIterator {
-    done: bool,
-    part: *const ngx_list_part_t,
-    h: *const ngx_table_elt_t,
-    i: ngx_uint_t,
-}
-
-// create new http request iterator
-/// # Safety
-///
-/// The caller has provided a valid `ngx_str_t` which can be dereferenced validly.
-pub unsafe fn list_iterator(list: *const ngx_list_t) -> NgxListIterator {
-    let part: *const ngx_list_part_t = &(*list).part;
-
-    NgxListIterator {
-        done: false,
-        part,
-        h: (*part).elts as *const ngx_table_elt_t,
-        i: 0,
-    }
-}
-
-// iterator for ngx_list_t
-impl Iterator for NgxListIterator {
-    // type Item = (&str,&str);
-    // TODO: try to use str instead of string
-    // something like pub struct Header(ngx_table_elt_t);
-    // then header would have key and value
-
-    type Item = (String, String);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        unsafe {
-            if self.done {
-                None
-            } else {
-                if self.i >= (*self.part).nelts {
-                    if (*self.part).next.is_null() {
-                        self.done = true;
-                        return None;
-                    }
-
-                    // loop back
-                    self.part = (*self.part).next;
-                    self.h = (*self.part).elts as *mut ngx_table_elt_t;
-                    self.i = 0;
-                }
-
-                let header: *const ngx_table_elt_t = self.h.add(self.i);
-                let header_name: ngx_str_t = (*header).key;
-                let header_value: ngx_str_t = (*header).value;
-                self.i += 1;
-                Some((header_name.to_string(), header_value.to_string()))
-            }
-        }
     }
 }
 

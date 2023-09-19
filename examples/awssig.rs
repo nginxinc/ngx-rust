@@ -302,12 +302,13 @@ http_request_handler!(awssigv4_header_handler, |request: &mut Request| {
         // Iterate over requests headers_in and copy into HeaderMap
         // Copy only headers that will be used to sign the request
         let mut headers = HeaderMap::new();
-        for (name, value) in request.headers_in_iterator() {
-            match name.to_lowercase().as_str() {
-                "host" => {
-                    headers.insert(http::header::HOST, value.parse().unwrap());
+        for h in request.headers_in_iterator() {
+            match h.lowercase_key() {
+                Some("host") => {
+                    headers.insert(http::header::HOST, h.value().parse().unwrap());
                 }
-                &_ => {}
+                Some(&_) => {}
+                None => {}
             };
         }
         headers.insert("X-Amz-Date", datetime_now.parse().unwrap());
@@ -334,11 +335,15 @@ http_request_handler!(awssigv4_header_handler, |request: &mut Request| {
     request.add_header_in("X-Amz-Date", datetime_now.as_str());
 
     // done signing, let's print values we have in request.headers_out, request.headers_in
-    for (name, value) in request.headers_out_iterator() {
-        ngx_log_debug_http!(request, "headers_out {}: {}", name, value);
+    for h in request.headers_out_iterator() {
+        ngx_log_debug_http!(request, "headers_out {}", h);
     }
-    for (name, value) in request.headers_in_iterator() {
-        ngx_log_debug_http!(request, "headers_in  {}: {}", name, value);
+    for mut h in request.headers_in_iterator() {
+        ngx_log_debug_http!(request, "headers_in  {}", h);
+        if h.lowercase_key() == Some("foo") {
+            let new_val = "value + ".to_owned() + h.value();
+            h.set_value(&new_val);
+        }
     }
 
     core::Status::NGX_OK

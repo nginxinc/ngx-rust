@@ -29,6 +29,7 @@
 //! ```
 //!
 #![warn(missing_docs)]
+#![allow(clippy::needless_doctest_main)]
 
 use std::fmt;
 use std::ptr::copy_nonoverlapping;
@@ -66,7 +67,7 @@ pub use bindings::*;
 /// ```rust
 /// let pool: *mut ngx_pool_t = ...; // Obtain a pointer to the nginx memory pool
 /// let data: &str = "example"; // The string to convert
-/// let ptr = str_to_uchar(pool, data);
+/// let ptr = unsafe { str_to_uchar(pool, data) };
 /// ```
 pub unsafe fn str_to_uchar(pool: *mut ngx_pool_t, data: &str) -> *mut u_char {
     let ptr: *mut u_char = ngx_palloc(pool, data.len() as _) as _;
@@ -197,6 +198,7 @@ pub unsafe fn add_to_ngx_table(
     if table.is_null() {
         return None;
     }
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     table.as_mut().map(|table| {
         table.hash = 1;
         table.key.len = key.len() as _;

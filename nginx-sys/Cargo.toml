@@ -1,6 +1,6 @@
 [package]
 name = "nginx-sys"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 categories = ["external-ffi-bindings"]
 description = "FFI bindings to NGINX"
@@ -15,7 +15,7 @@ crate-type = ["staticlib", "rlib"]
 [dependencies]
 
 [build-dependencies]
-bindgen = "0.65.0"
+bindgen = "0.66.0"
 which = "4.4.0"
 duct = "0.13.6"
 ureq = { version = "2.6.2", features = ["tls"] }

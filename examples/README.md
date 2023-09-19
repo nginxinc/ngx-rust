@@ -11,9 +11,9 @@
 
 
 # Examples
-This crate provides a couple of example using [ngx](https://crates.io/crates/ngx) crate:
+This crate provides a couple of examples using [ngx](https://crates.io/crates/ngx)](https://crates.io/crates/ngx) crate:
 
-- [awssig.rs](./awssig.rs) - An example of NGINX dynamic module that can sign GET request using AWS Signature v4.
+- [awssig.rs](./awssig.rs) - An example of an NGINX dynamic module that can sign GET requests using AWS Signature v4.
 - [curl](./curl.rs) - An example of the Access Phase NGINX dynamic module that blocks HTTP requests if `user-agent` header starts with `curl`.
 - [httporigdst](./httporigdst.rs) - A dynamic module recovers the original IP address and port number of the destination packet.
 - [upstream](./upstream.rs) - A dynamic module demonstrating the setup code to write an upstream filter or load balancer.
@@ -29,7 +29,7 @@ cargo build --package=examples --examples
 
 This module demonstrates how to create a minimal dynamic module with `http_request_handler`, that checks for User-Agent headers and returns status code 403 if UA starts with `curl`, if a module is disabled then uses `core::Status::NGX_DECLINED` to indicate the operation is rejected, for example, because it is disabled in the configuration (`curl off`). Additionally, it demonstrates how to write a defective parser.
 
-An example of nginx configuration file that uses that module can be found at [curl.conf](./curl.conf).
+An example of an Nginx configuration file that uses that module can be found at [curl.conf](./curl.conf).
 
 How to build and run in a [Docker](../Dockerfile) container curl example:
 ```
@@ -51,7 +51,7 @@ curl http://127.0.0.1:8000 -v -H "user-agent: foo"
 
 This module uses [NGX_HTTP_PRECONTENT_PHASE](https://nginx.org/en/docs/dev/development_guide.html#http_phases) and provides examples, of how to use external dependency and manipulate HTTP headers before sending client requests upstream.
 
-An example of nginx configuration file that uses that module can be found at [awssig.conf](./awssig.conf).
+An example of an Nginx configuration file that uses that module can be found at [awssig.conf](./awssig.conf).
 
 ## HTTPORIGDST  - NGINX Destination IP recovery module for HTTP
 
