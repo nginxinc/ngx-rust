@@ -67,7 +67,7 @@ See the [Dockerfile](Dockerfile) for dependencies as an example of required pack
 Example modules are available in [examples](examples) folder. You can use `cargo build --package=examples --examples` to build these examples. After building, you can find the `.so` or `.dylib` in the `target/debug` folder. Add `--features=linux` to build linux specific modules. **NOTE**: adding the "linux" feature on MacOS will cause a build failure.
 
 For example (all examples plus linux specific):
-`cargo build --packages=examples --examples --features=linux`
+`cargo build --package=examples --examples --features=linux`
 
 ### Docker
 
