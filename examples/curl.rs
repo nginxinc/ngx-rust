@@ -111,7 +111,10 @@ http_request_handler!(curl_access_handler, |request: &mut http::Request| {
 
     match co.enable {
         true => {
-            if request.user_agent().is_some_and(|ua| ua.as_bytes().starts_with(b"curl")) {
+            if request
+                .user_agent()
+                .is_some_and(|ua| ua.as_bytes().starts_with(b"curl"))
+            {
                 http::HTTPStatus::FORBIDDEN.into()
             } else {
                 core::Status::NGX_DECLINED
