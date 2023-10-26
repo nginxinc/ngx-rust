@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## Release v0.4.1
+ * release:     ngx 0.4.1                                                       (9d2ce0d)
+ * release:     nginx-sys 0.2.1                                                 (89eb277)
+ * fix(#50):    user_agent method returns 'Option<&NgxStr>' and not '&NgxStr'   (8706830)
+ * fix(#41):    zlib version update                                             (89e0fcc)
+ * fix:         check user_agent for null                                       (0ca0bc9)
+ * feat:        (2 of 2) Upstream module example (#37)                          (840d789)
+ * feat:        (1 of 2) Supporting changes for upstream example module. (#36)  (8b3a119)
+ * Revert "ci:  use GH cache for .cache folder on MAC OS"                       (7972ae7)
+ * docs:        updated changelog                                               (74604e2)
 
 ## Release 0.4.0-beta
  * realease:                                                                                                         bump nginx-sys to 0.2.0                                    (ad093d8)
