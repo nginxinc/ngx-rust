@@ -444,7 +444,7 @@ dependencies = [
 
 [[package]]
 name = "nginx-sys"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bindgen",
  "duct",
@@ -456,7 +456,7 @@ dependencies = [
 
 [[package]]
 name = "ngx"
-version = "0.4.0-beta"
+version = "0.4.1"
 dependencies = [
  "nginx-sys",
 ]

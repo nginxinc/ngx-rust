@@ -6,7 +6,7 @@ members = [
 
 [package]
 name = "ngx"
-version = "0.4.0-beta"
+version = "0.4.1"
 edition = "2021"
 autoexamples = false
 categories = ["api-bindings", "network-programming"]
@@ -19,7 +19,7 @@ keywords = ["nginx", "module", "sys"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nginx-sys = { path = "nginx-sys", version = "0.2"}
+nginx-sys = { path = "nginx-sys", version = "0.2.1"}
 
 [badges]
 maintenance = { status = "experimental" }
