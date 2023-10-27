@@ -27,7 +27,7 @@ impl Default for NgxHttpOrigDstCtx {
 
 impl NgxHttpOrigDstCtx {
     pub fn save(&mut self, addr: &str, port: in_port_t, pool: &mut core::Pool) -> core::Status {
-        let addr_data = pool.alloc(IPV4_STRLEN);
+        let addr_data = pool.alloc_mut_ptr(IPV4_STRLEN);
         if addr_data.is_null() {
             return core::Status::NGX_ERROR;
         }
@@ -36,7 +36,7 @@ impl NgxHttpOrigDstCtx {
         self.orig_dst_addr.data = addr_data as *mut u8;
 
         let port_str = port.to_string();
-        let port_data = pool.alloc(port_str.len());
+        let port_data = pool.alloc_mut_ptr(port_str.len());
         if port_data.is_null() {
             return core::Status::NGX_ERROR;
         }
@@ -147,7 +147,7 @@ static mut ngx_http_orig_dst_vars: [ngx_http_variable_t; 3] = [
 ];
 
 unsafe fn ngx_get_origdst(request: &mut http::Request) -> Result<(String, in_port_t), core::Status> {
-    let c = request.connection();
+    let c = request.connection_mut_ptr();
 
     if (*c).type_ != libc::SOCK_STREAM {
         ngx_log_debug_http!(request, "httporigdst: connection is not type SOCK_STREAM");
@@ -228,7 +228,7 @@ http_variable_get!(
             Ok((ip, port)) => {
                 // create context,
                 // set context
-                let new_ctx = request.pool().allocate::<NgxHttpOrigDstCtx>(Default::default());
+                let new_ctx = request.pool().allocate_mut_ptr::<NgxHttpOrigDstCtx>(Default::default());
 
                 if new_ctx.is_null() {
                     return core::Status::NGX_ERROR;
@@ -267,7 +267,7 @@ http_variable_get!(
             Ok((ip, port)) => {
                 // create context,
                 // set context
-                let new_ctx = request.pool().allocate::<NgxHttpOrigDstCtx>(Default::default());
+                let new_ctx = request.pool().allocate_mut_ptr::<NgxHttpOrigDstCtx>(Default::default());
 
                 if new_ctx.is_null() {
                     return core::Status::NGX_ERROR;

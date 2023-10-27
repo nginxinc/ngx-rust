@@ -5,17 +5,17 @@ use std::slice;
 /// The `Buffer` trait provides methods for working with an nginx buffer (`ngx_buf_t`).
 pub trait Buffer {
     /// Returns a raw pointer to the underlying `ngx_buf_t` of the buffer.
-    fn as_ngx_buf(&self) -> *const ngx_buf_t;
+    fn as_ngx_buf_ptr(&self) -> *const ngx_buf_t;
 
     /// Returns a mutable raw pointer to the underlying `ngx_buf_t` of the buffer.
-    fn as_ngx_buf_mut(&mut self) -> *mut ngx_buf_t;
+    fn as_ngx_buf_mut_ptr(&mut self) -> *mut ngx_buf_t;
 
     /// Returns the buffer contents as a byte slice.
     ///
     /// # Safety
     /// This function is marked as unsafe because it involves raw pointer manipulation.
     fn as_bytes(&self) -> &[u8] {
-        let buf = self.as_ngx_buf();
+        let buf = self.as_ngx_buf_ptr();
         unsafe { slice::from_raw_parts((*buf).pos, self.len()) }
     }
 
@@ -24,7 +24,7 @@ pub trait Buffer {
     /// # Safety
     /// This function is marked as unsafe because it involves raw pointer manipulation.
     fn len(&self) -> usize {
-        let buf = self.as_ngx_buf();
+        let buf = self.as_ngx_buf_ptr();
         unsafe {
             let pos = (*buf).pos;
             let last = (*buf).last;
@@ -44,7 +44,7 @@ pub trait Buffer {
     ///
     /// * `last` - A boolean indicating whether the buffer is the last buffer in a request.
     fn set_last_buf(&mut self, last: bool) {
-        let buf = self.as_ngx_buf_mut();
+        let buf = self.as_ngx_buf_mut_ptr();
         unsafe {
             (*buf).set_last_buf(if last { 1 } else { 0 });
         }
@@ -56,7 +56,7 @@ pub trait Buffer {
     ///
     /// * `last` - A boolean indicating whether the buffer is the last buffer in a chain of buffers.
     fn set_last_in_chain(&mut self, last: bool) {
-        let buf = self.as_ngx_buf_mut();
+        let buf = self.as_ngx_buf_mut_ptr();
         unsafe {
             (*buf).set_last_in_chain(if last { 1 } else { 0 });
         }
@@ -70,7 +70,7 @@ pub trait MutableBuffer: Buffer {
     /// # Safety
     /// This function is marked as unsafe because it involves raw pointer manipulation.
     fn as_bytes_mut(&mut self) -> &mut [u8] {
-        let buf = self.as_ngx_buf_mut();
+        let buf = self.as_ngx_buf_mut_ptr();
         unsafe { slice::from_raw_parts_mut((*buf).pos, self.len()) }
     }
 }
@@ -91,12 +91,12 @@ impl TemporaryBuffer {
 
 impl Buffer for TemporaryBuffer {
     /// Returns the underlying `ngx_buf_t` pointer as a raw pointer.
-    fn as_ngx_buf(&self) -> *const ngx_buf_t {
+    fn as_ngx_buf_ptr(&self) -> *const ngx_buf_t {
         self.0
     }
 
     /// Returns a mutable reference to the underlying `ngx_buf_t` pointer.
-    fn as_ngx_buf_mut(&mut self) -> *mut ngx_buf_t {
+    fn as_ngx_buf_mut_ptr(&mut self) -> *mut ngx_buf_t {
         self.0
     }
 }
@@ -127,12 +127,12 @@ impl MemoryBuffer {
 
 impl Buffer for MemoryBuffer {
     /// Returns the underlying `ngx_buf_t` pointer as a raw pointer.
-    fn as_ngx_buf(&self) -> *const ngx_buf_t {
+    fn as_ngx_buf_ptr(&self) -> *const ngx_buf_t {
         self.0
     }
 
     /// Returns a mutable reference to the underlying `ngx_buf_t` pointer.
-    fn as_ngx_buf_mut(&mut self) -> *mut ngx_buf_t {
+    fn as_ngx_buf_mut_ptr(&mut self) -> *mut ngx_buf_t {
         self.0
     }
 }

@@ -17,8 +17,8 @@ use ngx::{
         NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF, NGX_LOG_EMERG, NGX_RS_HTTP_SRV_CONF_OFFSET, NGX_RS_MODULE_SIGNATURE,
     },
     http::{
-        ngx_http_conf_get_module_srv_conf, ngx_http_conf_upstream_srv_conf_immutable,
-        ngx_http_conf_upstream_srv_conf_mutable, HTTPModule, Merge, MergeConfigError, Request,
+        ngx_http_conf_get_module_srv_conf_mut_ptr, ngx_http_conf_upstream_srv_conf_mut_ptr,
+        ngx_http_conf_upstream_srv_conf_ptr, HTTPModule, Merge, MergeConfigError, Request,
     },
     http_upstream_init_peer_pt,
     log::DebugMask,
@@ -146,13 +146,13 @@ http_upstream_init_peer_pt!(
     |request: &mut Request, us: *mut ngx_http_upstream_srv_conf_t| {
         ngx_log_debug_http!(request, "CUSTOM UPSTREAM request peer init");
 
-        let mut hcpd = request.pool().alloc_type::<UpstreamPeerData>();
+        let mut hcpd = request.pool().alloc_type_mut_ptr::<UpstreamPeerData>();
         if hcpd.is_null() {
             return Status::NGX_ERROR;
         }
 
         let maybe_conf: Option<*const SrvConfig> =
-            unsafe { ngx_http_conf_upstream_srv_conf_immutable(us, &ngx_http_upstream_custom_module) };
+            unsafe { ngx_http_conf_upstream_srv_conf_ptr(us, &ngx_http_upstream_custom_module) };
         if maybe_conf.is_none() {
             return Status::NGX_ERROR;
         }
@@ -163,7 +163,7 @@ http_upstream_init_peer_pt!(
             return Status::NGX_ERROR;
         }
 
-        let maybe_upstream = request.upstream();
+        let maybe_upstream = request.upstream_mut_ptr();
         if maybe_upstream.is_none() {
             return Status::NGX_ERROR;
         }
@@ -173,7 +173,7 @@ http_upstream_init_peer_pt!(
             (*hcpd).conf = Some(hccf);
             (*hcpd).upstream = maybe_upstream;
             (*hcpd).data = (*upstream_ptr).peer.data;
-            (*hcpd).client_connection = Some(request.connection());
+            (*hcpd).client_connection = Some(request.connection_mut_ptr());
             (*hcpd).original_get_peer = (*upstream_ptr).peer.get;
             (*hcpd).original_free_peer = (*upstream_ptr).peer.free;
 
@@ -244,7 +244,7 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
     ngx_log_debug_mask!(DebugMask::Http, (*cf).log, "CUSTOM UPSTREAM peer init_upstream");
 
     let maybe_conf: Option<*mut SrvConfig> =
-        ngx_http_conf_upstream_srv_conf_mutable(us, &ngx_http_upstream_custom_module);
+        ngx_http_conf_upstream_srv_conf_mut_ptr(us, &ngx_http_upstream_custom_module);
     if maybe_conf.is_none() {
         ngx_conf_log_error(
             NGX_LOG_EMERG as usize,
@@ -309,7 +309,7 @@ unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
     }
 
     let uscf: *mut ngx_http_upstream_srv_conf_t =
-        ngx_http_conf_get_module_srv_conf(cf, &ngx_http_upstream_module) as *mut ngx_http_upstream_srv_conf_t;
+        ngx_http_conf_get_module_srv_conf_mut_ptr(cf, &ngx_http_upstream_module) as *mut ngx_http_upstream_srv_conf_t;
 
     ccf.original_init_upstream = if (*uscf).peer.init_upstream.is_some() {
         (*uscf).peer.init_upstream
@@ -336,7 +336,7 @@ impl HTTPModule for Module {
 
     unsafe extern "C" fn create_srv_conf(cf: *mut ngx_conf_t) -> *mut c_void {
         let mut pool = Pool::from_ngx_pool((*cf).pool);
-        let conf = pool.alloc_type::<SrvConfig>();
+        let conf = pool.alloc_type_mut_ptr::<SrvConfig>();
         if conf.is_null() {
             ngx_conf_log_error(
                 NGX_LOG_EMERG as usize,
