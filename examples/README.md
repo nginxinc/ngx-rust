@@ -203,7 +203,7 @@ http {
 2. Compile the module from the cloned repo.
   ```
   cd ${CLONED_DIRECTORY}/ngx-rust
-  cargo buile --package=examples --example=upstream
+  cargo build --package=examples --example=upstream
   ```
 
 3. Copy the shared object to the modules directory, /etc/nginx/modules.
