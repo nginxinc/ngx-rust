@@ -260,7 +260,7 @@ fn import_gpg_keys(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
                     .into());
                 }
                 println!("Imported GPG key: {key_id}");
-                let key_id_record_file = gnupghome.join(format!("{key_ids}.key"));
+                let key_id_record_file = gnupghome.join(format!("{key_id}.key"));
                 File::create(key_id_record_file).expect("Unable to create key id record file");
             }
         }
