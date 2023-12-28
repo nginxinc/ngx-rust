@@ -38,7 +38,7 @@ macro_rules! http_subrequest_handler {
 /// Define a static variable setter.
 ///
 /// The set handler allows setting the property referenced by the variable.
-/// The set handler expects a [`Request`], [`mut ngx_variable_valut_t`], and a [`usize`].
+/// The set handler expects a [`Request`], [`mut ngx_variable_value_t`], and a [`usize`].
 /// Variables: <https://nginx.org/en/docs/dev/development_guide.html#http_variables>
 #[macro_export]
 macro_rules! http_variable_set {
@@ -58,7 +58,7 @@ macro_rules! http_variable_set {
 ///
 /// The get handler is responsible for evaluating a variable in the context of a specific request.
 /// Variable evaluators accept a [`Request`] input argument and two output
-/// arguments: [`ngx_http_variable_valut_t`] and [`usize`].
+/// arguments: [`ngx_variable_value_t`] and [`usize`].
 /// Variables: <https://nginx.org/en/docs/dev/development_guide.html#http_variables>
 #[macro_export]
 macro_rules! http_variable_get {
@@ -691,3 +691,4 @@ enum MethodInner {
     Trace,
     Connect,
 }
+
