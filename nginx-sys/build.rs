@@ -14,13 +14,14 @@ use std::{env, thread};
 use tar::Archive;
 use which::which;
 
+const UBUNTU_KEYSEVER: &str = "keyserver.ubuntu.com";
 /// The default version of zlib to use if the `ZLIB_VERSION` environment variable is not present
 const ZLIB_DEFAULT_VERSION: &str = "1.3";
-const ZLIB_GPG_SERVER_AND_KEY_ID: (&str, &str) = ("keyserver.ubuntu.com", "783FCD8E58BCAFBA");
+const ZLIB_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "783FCD8E58BCAFBA");
 const ZLIB_DOWNLOAD_URL_PREFIX: &str = "https://www.zlib.net";
 /// The default version of pcre2 to use if the `PCRE2_VERSION` environment variable is not present
 const PCRE2_DEFAULT_VERSION: &str = "10.42";
-const PCRE2_GPG_SERVER_AND_KEY_ID: (&str, &str) = ("keyserver.ubuntu.com", "9766E084FB0F43D8");
+const PCRE2_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "9766E084FB0F43D8");
 const PCRE2_DOWNLOAD_URL_PREFIX: &str = "https://github.com/PCRE2Project/pcre2/releases/download";
 /// The default version of openssl to use if the `OPENSSL_VERSION` environment variable is not present
 const OPENSSL_DEFAULT_VERSION: &str = "3.0.7";
@@ -36,14 +37,20 @@ B7C1C14360F353A36862E4D5231C84CDDCC69C45 \
 const OPENSSL_DOWNLOAD_URL_PREFIX: &str = "https://www.openssl.org/source/";
 /// The default version of NGINX to use if the `NGX_VERSION` environment variable is not present
 const NGX_DEFAULT_VERSION: &str = "1.23.3";
-const NGX_GPG_SERVER_AND_KEY_ID: (&str, &str) = ("keyserver.ubuntu.com", "A0EA981B66B0D967");
+
+/// Konstantin Pavlov's PGP public key. For Nginx 1.25.3 and earlier
+const NGX_GPG_SERVER_AND_KEY_ID_OLD: (&str, &str) = (UBUNTU_KEYSEVER, "A0EA981B66B0D967");
+/// Sergey Kandaurov's PGP public key. For Nginx 1.25.4
+const NGX_GPG_SERVER_AND_KEY_ID_CURRENT: (&str, &str) = (UBUNTU_KEYSEVER, "C8464D549AF75C0A");
+
 const NGX_DOWNLOAD_URL_PREFIX: &str = "https://nginx.org/download";
 /// If you are adding another dependency, you will need to add the server/public key tuple below.
-const ALL_SERVERS_AND_PUBLIC_KEY_IDS: [(&str, &str); 4] = [
+const ALL_SERVERS_AND_PUBLIC_KEY_IDS: [(&str, &str); 5] = [
     ZLIB_GPG_SERVER_AND_KEY_ID,
     PCRE2_GPG_SERVER_AND_KEY_ID,
     OPENSSL_GPG_SERVER_AND_KEY_IDS,
-    NGX_GPG_SERVER_AND_KEY_ID,
+    NGX_GPG_SERVER_AND_KEY_ID_OLD,
+    NGX_GPG_SERVER_AND_KEY_ID_CURRENT,
 ];
 /// List of configure switches specifying the modules to build nginx with
 const NGX_BASE_MODULES: [&str; 20] = [
