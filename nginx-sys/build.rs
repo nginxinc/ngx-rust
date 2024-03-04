@@ -5,12 +5,13 @@ use duct::cmd;
 use flate2::read::GzDecoder;
 use std::error::Error as StdError;
 use std::ffi::OsString;
-use std::fs::{read_to_string, File};
+use std::fs::{read_to_string, File, Permissions};
 use std::io::ErrorKind::NotFound;
 use std::io::{Error as IoError, Write};
 use std::path::{Path, PathBuf};
 use std::process::Output;
-use std::{env, thread};
+use std::{env, fs, thread};
+use std::os::unix::fs::PermissionsExt;
 use tar::Archive;
 use which::which;
 
@@ -105,6 +106,9 @@ fn main() -> Result<(), Box<dyn StdError>> {
     // Import GPG keys used to verify dependency tarballs
     import_gpg_keys(&cache_dir)?;
     println!("GPG keys imported");
+    // Ensure GPG directory has the correct permissions
+    ensure_gpg_permissions(&cache_dir)?;
+    println!("Verified GPG permissions");
     // Configure and Compile NGINX
     let (_nginx_install_dir, nginx_src_dir) = compile_nginx()?;
     // Hint cargo to rebuild if any of the these environment variables values change
@@ -230,7 +234,33 @@ fn nginx_install_dir(base_dir: &PathBuf) -> PathBuf {
     base_dir.join("nginx").join(nginx_version).join(platform)
 }
 
-/// Imports all of the required GPG keys into the `.cache/.gnupu` directory in order to
+/// Ensure the correct permissions are applied to the local gnupg directory
+fn ensure_gpg_permissions(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
+    fn change_permissions_recursively(path: &Path, dir_mode: u32, file_mode: u32) -> std::io::Result<()> {
+        if path.is_dir() {
+            // Set directory permissions to 700
+            fs::set_permissions(path, Permissions::from_mode(dir_mode))?;
+
+            for entry in fs::read_dir(path)? {
+                let entry = entry?;
+                let path = entry.path();
+
+                change_permissions_recursively(&path, dir_mode, file_mode)?;
+            }
+        } else {
+            // Set file permissions to 600
+            fs::set_permissions(path, Permissions::from_mode(file_mode))?;
+        }
+
+        Ok(())
+    }
+
+    let gnupghome = cache_dir.join(".gnupg");
+    change_permissions_recursively(gnupghome.as_path(), 0o700, 0o600)
+        .map_err(|e| Box::new(e) as Box<dyn StdError>)
+}
+
+/// Imports all the required GPG keys into the `.cache/.gnupu` directory in order to
 /// validate the integrity of the downloaded tarballs.
 fn import_gpg_keys(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
     if let Some(gpg) = gpg_path() {
@@ -238,8 +268,9 @@ fn import_gpg_keys(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
         // so we store all gpg data with our cache directory.
         let gnupghome = cache_dir.join(".gnupg");
         if !gnupghome.exists() {
-            std::fs::create_dir_all(&gnupghome)?;
+            fs::create_dir_all(&gnupghome)?;
         }
+        ensure_gpg_permissions(cache_dir)?;
 
         let keys_to_import = ALL_SERVERS_AND_PUBLIC_KEY_IDS.iter().filter(|(_, key_id)| {
             let key_id_record_file = gnupghome.join(format!("{key_id}.key"));
@@ -290,7 +321,7 @@ fn make_cache_dir() -> Result<PathBuf, Box<dyn StdError>> {
         .expect("Failed to find parent directory of manifest directory")
         .join(".cache");
     if !cache_dir.exists() {
-        std::fs::create_dir_all(&cache_dir)?;
+        fs::create_dir_all(&cache_dir)?;
     }
     Ok(cache_dir)
 }
@@ -306,7 +337,7 @@ fn download(cache_dir: &Path, url: &str) -> Result<PathBuf, Box<dyn StdError>> {
     if proceed_with_download(&file_path) {
         println!("Downloading: {} -> {}", url, file_path.display());
         let mut reader = ureq::get(url).call()?.into_reader();
-        let mut file = std::fs::File::create(&file_path)?;
+        let mut file = File::create(&file_path)?;
         std::io::copy(&mut reader, &mut file)?;
     }
 
@@ -389,14 +420,14 @@ fn verify_archive_signature(
 fn get_archive(cache_dir: &Path, archive_url: &str, signature_url: &str) -> Result<PathBuf, Box<dyn StdError>> {
     let signature_path = download(cache_dir, signature_url)?;
     if let Err(e) = verify_signature_file(cache_dir, &signature_path) {
-        std::fs::remove_file(&signature_path)?;
+        fs::remove_file(&signature_path)?;
         return Err(e);
     }
     let archive_path = download(cache_dir, archive_url)?;
     match verify_archive_signature(cache_dir, &archive_path, &signature_path) {
         Ok(_) => Ok(archive_path),
         Err(e) => {
-            std::fs::remove_file(&archive_path)?;
+            fs::remove_file(&archive_path)?;
             Err(e)
         }
     }
@@ -409,7 +440,7 @@ fn extract_archive(
     extract_output_base_dir: &Path,
 ) -> Result<(String, PathBuf), Box<dyn StdError>> {
     if !extract_output_base_dir.exists() {
-        std::fs::create_dir_all(extract_output_base_dir)?;
+        fs::create_dir_all(extract_output_base_dir)?;
     }
     let archive_file =
         File::open(archive_path).unwrap_or_else(|_| panic!("Unable to open archive file: {}", archive_path.display()));
@@ -451,7 +482,7 @@ fn extract_all_archives(cache_dir: &Path) -> Result<Vec<(String, PathBuf)>, Box<
     let mut sources = Vec::new();
     let extract_output_base_dir = source_output_dir(cache_dir);
     if !extract_output_base_dir.exists() {
-        std::fs::create_dir_all(&extract_output_base_dir)?;
+        fs::create_dir_all(&extract_output_base_dir)?;
     }
     for (archive_url, signature_url) in archives {
         let archive_path = get_archive(cache_dir, &archive_url, &signature_url)?;
@@ -498,7 +529,7 @@ fn compile_nginx() -> Result<(PathBuf, PathBuf), Box<dyn StdError>> {
     println!("NGINX build info changed: {}", !build_info_no_change);
 
     if !nginx_binary_exists || !autoconf_makefile_exists || !build_info_no_change {
-        std::fs::create_dir_all(&nginx_install_dir)?;
+        fs::create_dir_all(&nginx_install_dir)?;
         configure(nginx_configure_flags, nginx_src_dir)?;
         make(nginx_src_dir, "install")?;
         let mut output = File::create(build_info_path)?;
@@ -625,7 +656,7 @@ fn parse_includes_from_makefile(nginx_autoconf_makefile_path: &PathBuf) -> Vec<P
     }
 
     let mut includes = vec![];
-    let makefile_contents = match std::fs::read_to_string(nginx_autoconf_makefile_path) {
+    let makefile_contents = match read_to_string(nginx_autoconf_makefile_path) {
         Ok(path) => path,
         Err(e) => {
             panic!(
