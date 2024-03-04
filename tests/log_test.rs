@@ -4,7 +4,7 @@ use std::io::Result;
 use std::process::Command;
 use std::process::Output;
 
-const NGX_DEFAULT_VERSION: &str = "1.23.3";
+const NGX_DEFAULT_VERSION: &str = "1.24.0";
 const NGINX_BIN: &str = "sbin/nginx";
 const NGINX_CONFIG: &str = "conf/nginx.conf";
 
