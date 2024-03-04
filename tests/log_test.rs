@@ -79,7 +79,6 @@ impl Nginx {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use std::env;
 
@@ -89,13 +88,23 @@ mod tests {
     fn test() {
         let mut nginx = Nginx::default();
 
-        let path = env::current_dir().unwrap();
-        let test_config_path = format!("{}/{}", path.display(), TEST_NGINX_CONFIG);
-        (nginx.replace_config(&test_config_path)).expect("copy done");
-        let output = nginx.restart().expect("fail to start");
+        let current_dir = env::current_dir().expect("Unable to get current directory");
+        let test_config_path = current_dir.join(TEST_NGINX_CONFIG);
+
+        assert!(
+            test_config_path.exists(),
+            "Config file not found: {}\nCurrent directory: {}",
+            test_config_path.to_string_lossy(),
+            current_dir.to_string_lossy()
+        );
+
+        nginx
+            .replace_config(&test_config_path.to_string_lossy())
+            .expect(format!("Unable to load config file: {}", test_config_path.to_string_lossy()).as_str());
+        let output = nginx.restart().expect("Unable to restart NGINX");
         assert!(output.status.success());
 
-        let output = nginx.stop().expect("fail to stop");
+        let output = nginx.stop().expect("Unable to stop NGINX");
         assert!(output.status.success());
     }
 }
