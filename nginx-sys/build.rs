@@ -40,7 +40,7 @@ C1F33DD8CE1D4CC613AF14DA9195C48241FBF7DD",
 );
 const OPENSSL_DOWNLOAD_URL_PREFIX: &str = "https://github.com/openssl/openssl/releases/download";
 /// The default version of NGINX to use if the `NGX_VERSION` environment variable is not present
-const NGX_DEFAULT_VERSION: &str = "1.23.3";
+const NGX_DEFAULT_VERSION: &str = "1.24.0";
 
 /// Konstantin Pavlov's PGP public key. For Nginx 1.25.3 and earlier
 const NGX_GPG_SERVER_AND_KEY_ID_OLD: (&str, &str) = (UBUNTU_KEYSEVER, "A0EA981B66B0D967");
