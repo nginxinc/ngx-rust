@@ -19,7 +19,7 @@ const UBUNTU_KEYSEVER: &str = "keyserver.ubuntu.com";
 /// The default version of zlib to use if the `ZLIB_VERSION` environment variable is not present
 const ZLIB_DEFAULT_VERSION: &str = "1.3";
 const ZLIB_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "783FCD8E58BCAFBA");
-const ZLIB_DOWNLOAD_URL_PREFIX: &str = "https://www.zlib.net";
+const ZLIB_DOWNLOAD_URL_PREFIX: &str = "https://github.com/madler/zlib/releases/download";
 /// The default version of pcre2 to use if the `PCRE2_VERSION` environment variable is not present
 const PCRE2_DEFAULT_VERSION: &str = "10.42";
 const PCRE2_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "9766E084FB0F43D8");
@@ -184,7 +184,7 @@ build process:
 
 fn zlib_archive_url() -> String {
     let version = env::var("ZLIB_VERSION").unwrap_or_else(|_| ZLIB_DEFAULT_VERSION.to_string());
-    format!("{ZLIB_DOWNLOAD_URL_PREFIX}/zlib-{version}.tar.gz")
+    format!("{ZLIB_DOWNLOAD_URL_PREFIX}/v{version}/zlib-{version}.tar.gz")
 }
 
 fn pcre2_archive_url() -> String {
