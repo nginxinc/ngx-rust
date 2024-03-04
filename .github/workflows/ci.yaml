@@ -76,6 +76,8 @@ jobs:
             .cache/*.tar.sig
           key:  ${{ runner.os }}-deps-${{ hashFiles('**/nginx-sys/build.rs') }}
           restore-keys: ${{ runner.os }}-deps-
+      - name: disable ipv6 for gpg
+        run: echo "disable-ipv6" >> .cache/.gnupg/dirmngr.conf
       - name: run tests
         uses: actions-rs/cargo@v1
         env:
