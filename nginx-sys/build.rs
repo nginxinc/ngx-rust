@@ -8,10 +8,10 @@ use std::ffi::OsString;
 use std::fs::{read_to_string, File, Permissions};
 use std::io::ErrorKind::NotFound;
 use std::io::{Error as IoError, Write};
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Output;
 use std::{env, fs, thread};
-use std::os::unix::fs::PermissionsExt;
 use tar::Archive;
 use which::which;
 
@@ -256,8 +256,7 @@ fn ensure_gpg_permissions(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
     }
 
     let gnupghome = cache_dir.join(".gnupg");
-    change_permissions_recursively(gnupghome.as_path(), 0o700, 0o600)
-        .map_err(|e| Box::new(e) as Box<dyn StdError>)
+    change_permissions_recursively(gnupghome.as_path(), 0o700, 0o600).map_err(|e| Box::new(e) as Box<dyn StdError>)
 }
 
 /// Imports all the required GPG keys into the `.cache/.gnupu` directory in order to
@@ -352,20 +351,13 @@ fn verify_signature_file(cache_dir: &Path, signature_path: &Path) -> Result<(), 
     if !signature_path.exists() {
         return Err(Box::new(std::io::Error::new(
             NotFound,
-            format!(
-                "GPG signature file not found: {}",
-                signature_path.display()
-            ),
+            format!("GPG signature file not found: {}", signature_path.display()),
         )));
     }
     if let Some(gpg) = gpg_path() {
         let gnupghome = cache_dir.join(".gnupg");
         let cmd = cmd!(gpg, "--homedir", &gnupghome, "--list-packets", signature_path);
-        let output = cmd
-            .stderr_to_stdout()
-            .stdout_capture()
-            .unchecked()
-            .run()?;
+        let output = cmd.stderr_to_stdout().stdout_capture().unchecked().run()?;
 
         if !output.status.success() {
             eprintln!("{}", String::from_utf8_lossy(&output.stdout));
@@ -394,11 +386,7 @@ fn verify_archive_signature(
     if let Some(gpg) = gpg_path() {
         let gnupghome = cache_dir.join(".gnupg");
         let cmd = cmd!(gpg, "--homedir", &gnupghome, "--verify", signature_path, archive_path);
-        let output = cmd
-            .stderr_to_stdout()
-            .stdout_capture()
-            .unchecked()
-            .run()?;
+        let output = cmd.stderr_to_stdout().stdout_capture().unchecked().run()?;
         if !output.status.success() {
             eprintln!("{}", String::from_utf8_lossy(&output.stdout));
             return Err(Box::new(std::io::Error::new(
