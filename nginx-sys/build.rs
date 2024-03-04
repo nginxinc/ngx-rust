@@ -98,10 +98,13 @@ const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 9] = [
 /// extract them, execute autoconf `configure` for NGINX, compile NGINX and finally install
 /// NGINX in a subdirectory with the project.
 fn main() -> Result<(), Box<dyn StdError>> {
+    println!("Building NGINX");
     // Create .cache directory
     let cache_dir = make_cache_dir()?;
+    println!("Cache directory created");
     // Import GPG keys used to verify dependency tarballs
     import_gpg_keys(&cache_dir)?;
+    println!("GPG keys imported");
     // Configure and Compile NGINX
     let (_nginx_install_dir, nginx_src_dir) = compile_nginx()?;
     // Hint cargo to rebuild if any of the these environment variables values change
@@ -256,6 +259,7 @@ fn import_gpg_keys(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
                 )
                 .stderr_to_stdout()
                 .stderr_capture()
+                .unchecked()
                 .run()?;
                 if !output.status.success() {
                     return Err(format!(
@@ -300,27 +304,45 @@ fn download(cache_dir: &Path, url: &str) -> Result<PathBuf, Box<dyn StdError>> {
     let filename = url.split('/').last().unwrap();
     let file_path = cache_dir.join(filename);
     if proceed_with_download(&file_path) {
+        println!("Downloading: {} -> {}", url, file_path.display());
         let mut reader = ureq::get(url).call()?.into_reader();
         let mut file = std::fs::File::create(&file_path)?;
         std::io::copy(&mut reader, &mut file)?;
+    }
+
+    if !file_path.exists() {
+        return Err(format!("Downloaded file was not written to the expected location: {}", url).into());
     }
     Ok(file_path)
 }
 
 /// Validates that a file is a valid GPG signature file.
 fn verify_signature_file(cache_dir: &Path, signature_path: &Path) -> Result<(), Box<dyn StdError>> {
+    if !signature_path.exists() {
+        return Err(Box::new(std::io::Error::new(
+            NotFound,
+            format!(
+                "GPG signature file not found: {}",
+                signature_path.display()
+            ),
+        )));
+    }
     if let Some(gpg) = gpg_path() {
         let gnupghome = cache_dir.join(".gnupg");
-        let output = cmd!(gpg, "--homedir", &gnupghome, "--list-packets", signature_path)
+        let cmd = cmd!(gpg, "--homedir", &gnupghome, "--list-packets", signature_path);
+        let output = cmd
             .stderr_to_stdout()
             .stdout_capture()
+            .unchecked()
             .run()?;
+
         if !output.status.success() {
             eprintln!("{}", String::from_utf8_lossy(&output.stdout));
             return Err(Box::new(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 format!(
-                    "GPG signature file verification failed for signature: {}",
+                    "Command: {:?} \nGPG signature file verification failed for signature: {}",
+                    cmd,
                     signature_path.display()
                 ),
             )));
@@ -340,16 +362,19 @@ fn verify_archive_signature(
 ) -> Result<(), Box<dyn StdError>> {
     if let Some(gpg) = gpg_path() {
         let gnupghome = cache_dir.join(".gnupg");
-        let output = cmd!(gpg, "--homedir", &gnupghome, "--verify", signature_path, archive_path)
+        let cmd = cmd!(gpg, "--homedir", &gnupghome, "--verify", signature_path, archive_path);
+        let output = cmd
             .stderr_to_stdout()
             .stdout_capture()
+            .unchecked()
             .run()?;
         if !output.status.success() {
             eprintln!("{}", String::from_utf8_lossy(&output.stdout));
             return Err(Box::new(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 format!(
-                    "GPG signature verification failed of archive failed [{}]",
+                    "Command: {:?}\nGPG signature verification failed of archive failed [{}]",
+                    cmd,
                     archive_path.display()
                 ),
             )));
