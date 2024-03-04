@@ -35,7 +35,7 @@ B7C1C14360F353A36862E4D5231C84CDDCC69C45 \
 95A9908DDFA16830BE9FB9003D30A3A9FF1360DC \
 7953AC1FBC3DC8B3B292393ED5E9E43F7DF9EE8C",
 );
-const OPENSSL_DOWNLOAD_URL_PREFIX: &str = "https://www.openssl.org/source/";
+const OPENSSL_DOWNLOAD_URL_PREFIX: &str = "https://github.com/openssl/openssl/releases/download";
 /// The default version of NGINX to use if the `NGX_VERSION` environment variable is not present
 const NGX_DEFAULT_VERSION: &str = "1.23.3";
 
@@ -194,7 +194,7 @@ fn pcre2_archive_url() -> String {
 
 fn openssl_archive_url() -> String {
     let version = env::var("OPENSSL_VERSION").unwrap_or_else(|_| OPENSSL_DEFAULT_VERSION.to_string());
-    format!("{OPENSSL_DOWNLOAD_URL_PREFIX}/openssl-{version}.tar.gz")
+    format!("{OPENSSL_DOWNLOAD_URL_PREFIX}/openssl-{version}/openssl-{version}.tar.gz")
 }
 
 fn nginx_archive_url() -> String {
