@@ -20,7 +20,7 @@ NGINX modules can be built against a particular version of NGINX. The following 
 
 * `ZLIB_VERSION` (default 1.3) -
 * `PCRE2_VERSION` (default 10.42)
-* `OPENSSL_VERSION` (default 3.0.7)
+* `OPENSSL_VERSION` (default 3.2.1)
 * `NGX_VERSION` (default 1.23.3) - NGINX OSS version
 * `NGX_DEBUG` (default to false)-  if set to true, then will compile NGINX `--with-debug` option
 
