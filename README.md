@@ -147,4 +147,4 @@ This project uses some great work from [dcoles/nginx-rs](https://github.com/dcol
 ## License
 
 All code in this repository is licensed under the
-[Apache License v2 license](LICENSE.txt).
+[Apache License v2 license](LICENSE).
