@@ -39,6 +39,39 @@ jobs:
       - name: run tests
         run: cargo test --verbose
 
+  examples-linux:
+    name: Examples (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout source
+        uses: actions/checkout@v3
+      - name: set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - name: set up nginx deps cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            .cache/.gnupg
+            .cache/nginx
+            .cache/*.tar.gz
+            .cache/*.tar.asc
+            .cache/*.tar.sig
+          key:  ${{ runner.os }}-deps-${{ hashFiles('**/nginx-sys/build.rs') }}
+          restore-keys: ${{ runner.os }}-deps-
+      - name: compile examples
+        run: cargo build --release --package examples --examples --verbose
+
   test-macos:
     name: Test (MacOS)
     runs-on: macos-latest
