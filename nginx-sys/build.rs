@@ -1,8 +1,7 @@
 extern crate bindgen;
 extern crate duct;
 
-use duct::cmd;
-use flate2::read::GzDecoder;
+use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::ffi::OsString;
 use std::fs::{read_to_string, File, Permissions};
@@ -12,22 +11,27 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Output;
 use std::{env, fs, thread};
+
+use duct::cmd;
+use flate2::read::GzDecoder;
 use tar::Archive;
 use which::which;
 
-const UBUNTU_KEYSEVER: &str = "keyserver.ubuntu.com";
+const UBUNTU_KEYSEVER: &str = "hkps://keyserver.ubuntu.com";
 /// The default version of zlib to use if the `ZLIB_VERSION` environment variable is not present
 const ZLIB_DEFAULT_VERSION: &str = "1.3.1";
-const ZLIB_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "783FCD8E58BCAFBA");
+/// Key 1: Mark Adler's public key. For zlib 1.3.1 and earlier
+const ZLIB_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "5ED46A6721D365587791E2AA783FCD8E58BCAFBA");
 const ZLIB_DOWNLOAD_URL_PREFIX: &str = "https://github.com/madler/zlib/releases/download";
 /// The default version of pcre2 to use if the `PCRE2_VERSION` environment variable is not present
 const PCRE2_DEFAULT_VERSION: &str = "10.42";
-const PCRE2_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "9766E084FB0F43D8");
+/// Key 1: Phillip Hazel's public key. For PCRE2 10.42 and earlier
+const PCRE2_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "45F68D54BBE23FB3039B46E59766E084FB0F43D8");
 const PCRE2_DOWNLOAD_URL_PREFIX: &str = "https://github.com/PCRE2Project/pcre2/releases/download";
 /// The default version of openssl to use if the `OPENSSL_VERSION` environment variable is not present
 const OPENSSL_DEFAULT_VERSION: &str = "3.2.1";
 const OPENSSL_GPG_SERVER_AND_KEY_IDS: (&str, &str) = (
-    "keys.openpgp.org",
+    UBUNTU_KEYSEVER,
     "\
 EFC0A467D613CB83C7ED6D30D894E2CE8B3D79F5 \
 A21FAB74B0088AA361152586B8EF1A6BA9DA2D5C \
@@ -42,20 +46,25 @@ const OPENSSL_DOWNLOAD_URL_PREFIX: &str = "https://github.com/openssl/openssl/re
 /// The default version of NGINX to use if the `NGX_VERSION` environment variable is not present
 const NGX_DEFAULT_VERSION: &str = "1.24.0";
 
-/// Konstantin Pavlov's PGP public key. For Nginx 1.25.3 and earlier
-const NGX_GPG_SERVER_AND_KEY_ID_OLD: (&str, &str) = (UBUNTU_KEYSEVER, "A0EA981B66B0D967");
-/// Sergey Kandaurov's PGP public key. For Nginx 1.25.4
-const NGX_GPG_SERVER_AND_KEY_ID_CURRENT: (&str, &str) = (UBUNTU_KEYSEVER, "C8464D549AF75C0A");
+/// Key 1: Konstantin Pavlov's public key. For Nginx 1.25.3 and earlier
+/// Key 2: Sergey Kandaurov's public key. For Nginx 1.25.4
+const NGX_GPG_SERVER_AND_KEY_IDS: (&str, &str) = (
+    UBUNTU_KEYSEVER,
+    "\
+13C82A63B603576156E30A4EA0EA981B66B0D967 \
+D6786CE303D9A9022998DC6CC8464D549AF75C0A",
+);
 
 const NGX_DOWNLOAD_URL_PREFIX: &str = "https://nginx.org/download";
+
 /// If you are adding another dependency, you will need to add the server/public key tuple below.
-const ALL_SERVERS_AND_PUBLIC_KEY_IDS: [(&str, &str); 5] = [
+const ALL_SERVERS_AND_PUBLIC_KEY_IDS: [(&str, &str); 4] = [
     ZLIB_GPG_SERVER_AND_KEY_ID,
     PCRE2_GPG_SERVER_AND_KEY_ID,
     OPENSSL_GPG_SERVER_AND_KEY_IDS,
-    NGX_GPG_SERVER_AND_KEY_ID_OLD,
-    NGX_GPG_SERVER_AND_KEY_ID_CURRENT,
+    NGX_GPG_SERVER_AND_KEY_IDS,
 ];
+
 /// List of configure switches specifying the modules to build nginx with
 const NGX_BASE_MODULES: [&str; 20] = [
     "--with-compat",
@@ -262,6 +271,25 @@ fn ensure_gpg_permissions(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
     change_permissions_recursively(gnupghome.as_path(), 0o700, 0o600).map_err(|e| Box::new(e) as Box<dyn StdError>)
 }
 
+/// Iterates through the tuples in `ALL_SERVERS_AND_PUBLIC_KEY_IDS` and returns a map of
+/// key servers to public key IDs.
+fn keys_indexed_by_key_server() -> HashMap<String, Vec<String>> {
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+
+    for tuple in ALL_SERVERS_AND_PUBLIC_KEY_IDS {
+        let key = tuple.0.to_string();
+        let value: Vec<String> = tuple.1.split_whitespace().map(|s| s.to_string()).collect();
+        match map.get_mut(&key) {
+            Some(keys) => keys.extend(value),
+            None => {
+                map.insert(key, value);
+            }
+        }
+    }
+
+    map
+}
+
 /// Imports all the required GPG keys into the `.cache/.gnupu` directory in order to
 /// validate the integrity of the downloaded tarballs.
 fn import_gpg_keys(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
@@ -274,35 +302,33 @@ fn import_gpg_keys(cache_dir: &Path) -> Result<(), Box<dyn StdError>> {
         }
         ensure_gpg_permissions(cache_dir)?;
 
-        let keys_to_import = ALL_SERVERS_AND_PUBLIC_KEY_IDS.iter().filter(|(_, key_id)| {
-            let key_id_record_file = gnupghome.join(format!("{key_id}.key"));
-            !key_id_record_file.exists()
-        });
+        for (server, key_ids) in keys_indexed_by_key_server() {
+            println!("Importing {} GPG keys for key server: {}", key_ids.len(), server);
 
-        for (server, key_ids) in keys_to_import {
-            for key_id in key_ids.split_whitespace() {
-                let output = cmd!(
-                    &gpg,
-                    "--homedir",
-                    &gnupghome,
-                    "--keyserver",
-                    server,
-                    "--recv-keys",
-                    key_id
+            let homedir = gnupghome.clone();
+            let homedir_str = homedir.to_string_lossy().to_string();
+            let base_args = vec![
+                "--homedir",
+                homedir_str.as_str(),
+                "--keyserver",
+                server.as_str(),
+                "--recv-keys",
+            ];
+            let key_ids_str = key_ids.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+            let args = [base_args, key_ids_str].concat();
+            let cmd = duct::cmd(&gpg, &args);
+
+            let output = cmd.stderr_to_stdout().stderr_capture().unchecked().run()?;
+
+            if !output.status.success() {
+                eprintln!("{}", String::from_utf8_lossy(&output.stdout));
+                return Err(format!(
+                    "Command: {:?}\n\
+                Failed to import GPG keys: {}",
+                    cmd,
+                    key_ids.join(" ")
                 )
-                .stderr_to_stdout()
-                .stderr_capture()
-                .unchecked()
-                .run()?;
-                if !output.status.success() {
-                    return Err(format!(
-                        "Failed to import GPG key {} from server {}: {}",
-                        key_id,
-                        server,
-                        String::from_utf8_lossy(&output.stdout)
-                    )
-                    .into());
-                }
+                .into());
             }
         }
     }
