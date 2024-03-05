@@ -63,6 +63,12 @@ pub mod log;
 #[macro_export]
 macro_rules! ngx_modules {
     ($( $mod:ident ),+) => {
+        #[cfg(target_arch = "aarch64")]
+        type Ptr = u8;
+
+        #[cfg(target_arch = "x86_64")]
+        type Ptr = i8;
+
         #[no_mangle]
         pub static mut ngx_modules: [*const ngx_module_t; $crate::count!($( $mod, )+) + 1] = [
             $( unsafe { &$mod } as *const ngx_module_t, )+
@@ -71,7 +77,7 @@ macro_rules! ngx_modules {
 
         #[no_mangle]
         pub static mut ngx_module_names: [*const c_char; $crate::count!($( $mod, )+) + 1] = [
-            $( concat!(stringify!($mod), "\0").as_ptr() as *const i8, )+
+            $( concat!(stringify!($mod), "\0").as_ptr() as *const Ptr, )+
             std::ptr::null()
         ];
 

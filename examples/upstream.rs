@@ -146,7 +146,7 @@ http_upstream_init_peer_pt!(
     |request: &mut Request, us: *mut ngx_http_upstream_srv_conf_t| {
         ngx_log_debug_http!(request, "CUSTOM UPSTREAM request peer init");
 
-        let mut hcpd = request.pool().alloc_type::<UpstreamPeerData>();
+        let hcpd = request.pool().alloc_type::<UpstreamPeerData>();
         if hcpd.is_null() {
             return Status::NGX_ERROR;
         }
@@ -250,7 +250,7 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
             NGX_LOG_EMERG as usize,
             cf,
             0,
-            "CUSTOM UPSTREAM no upstream srv_conf".as_bytes().as_ptr() as *const i8,
+            "CUSTOM UPSTREAM no upstream srv_conf".as_bytes().as_ptr() as *const Ptr,
         );
         return isize::from(Status::NGX_ERROR);
     }
@@ -266,7 +266,7 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
             NGX_LOG_EMERG as usize,
             cf,
             0,
-            "CUSTOM UPSTREAM failed calling init_upstream".as_bytes().as_ptr() as *const i8,
+            "CUSTOM UPSTREAM failed calling init_upstream".as_bytes().as_ptr() as *const Ptr,
         );
         return isize::from(Status::NGX_ERROR);
     }
@@ -289,7 +289,7 @@ unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
 ) -> *mut c_char {
     ngx_log_debug_mask!(DebugMask::Http, (*cf).log, "CUSTOM UPSTREAM module init");
 
-    let mut ccf = &mut (*(conf as *mut SrvConfig));
+    let ccf = &mut (*(conf as *mut SrvConfig));
 
     if (*(*cf).args).nelts == 2 {
         let value: &[ngx_str_t] = slice::from_raw_parts((*(*cf).args).elts as *const ngx_str_t, (*(*cf).args).nelts);
@@ -299,11 +299,11 @@ unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
                 NGX_LOG_EMERG as usize,
                 cf,
                 0,
-                "invalid value \"%V\" in \"%V\" directive".as_bytes().as_ptr() as *const i8,
+                "invalid value \"%V\" in \"%V\" directive".as_bytes().as_ptr() as *const Ptr,
                 value[1],
                 &(*cmd).name,
             );
-            return usize::MAX as *mut i8;
+            return usize::MAX as *mut Ptr;
         }
         ccf.max = n as u32;
     }
@@ -344,7 +344,7 @@ impl HTTPModule for Module {
                 0,
                 "CUSTOM UPSTREAM could not allocate memory for config"
                     .as_bytes()
-                    .as_ptr() as *const i8,
+                    .as_ptr() as *const Ptr,
             );
             return std::ptr::null_mut();
         }
