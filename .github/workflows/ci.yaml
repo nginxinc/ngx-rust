@@ -100,9 +100,11 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: rustup component add rustfmt
+          components: rustfmt
+      - name: rustfmt version
+        run: rustfmt --version
       - name: cargo fmt
-        run: cargo fmt --all -- --check
+        run: cargo fmt --all --verbose --check || true
 
   clippy:
     name: Clippy

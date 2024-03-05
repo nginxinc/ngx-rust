@@ -84,6 +84,7 @@ impl<'a> From<&'a Request> for *const ngx_http_request_t {
         &request.0 as *const _
     }
 }
+
 impl<'a> From<&'a mut Request> for *mut ngx_http_request_t {
     fn from(request: &'a mut Request) -> Self {
         &request.0 as *const _ as *mut _
