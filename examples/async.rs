@@ -169,12 +169,12 @@ http_request_handler!(async_access_handler, |request: &mut http::Request| {
     }
 
     let event_data = unsafe {
-        let ctx = request.0.ctx.add(ngx_http_async_module.ctx_index);
+        let ctx = request.get_inner().ctx.add(ngx_http_async_module.ctx_index);
         if (*ctx).is_null() {
             let ctx_data = &mut *(request.pool().alloc(std::mem::size_of::<RequestCTX>()) as *mut RequestCTX);
             ctx_data.event_data = Some(Arc::new(EventData {
                 done_flag: AtomicBool::new(false),
-                request: &request.0 as *const _ as *mut _,
+                request: &request.get_inner() as *const _ as *mut _,
             }));
             *ctx = ctx_data as *const _ as _;
             ctx_data.event_data.as_ref().unwrap().clone()
@@ -224,7 +224,7 @@ http_request_handler!(async_access_handler, |request: &mut http::Request| {
     });
 
     unsafe {
-        (*request.0.main).set_count((*request.0.main).count() + 1);
+        (*request.get_inner().main).set_count((*request.get_inner().main).count() + 1);
     }
     core::Status::NGX_DONE
 });
