@@ -368,6 +368,11 @@ impl Request {
     pub fn headers_out_iterator(&self) -> NgxListIterator {
         unsafe { list_iterator(&self.0.headers_out.headers) }
     }
+
+    /// Returns the inner data structure that the Request object is wrapping.
+    pub fn get_inner(&self) -> &ngx_http_request_t {
+        &self.0
+    }
 }
 
 // trait OnSubRequestDone {
@@ -692,4 +697,3 @@ enum MethodInner {
     Trace,
     Connect,
 }
-
