@@ -5,6 +5,7 @@ use std::error::Error as StdError;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
+#[cfg(feature = "vendored")]
 mod vendored;
 
 const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 2] = ["OUT_DIR", "NGX_OBJS"];
@@ -14,10 +15,12 @@ const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 2] = ["OUT_DIR", "NGX_OBJS"];
 /// extract them, execute autoconf `configure` for NGINX, compile NGINX and finally install
 /// NGINX in a subdirectory with the project.
 fn main() -> Result<(), Box<dyn StdError>> {
-    let nginx_build_dir = if let Ok(v) = env::var("NGX_OBJS") {
-        PathBuf::from(v).canonicalize()?
-    } else {
-        vendored::build()?
+    let nginx_build_dir = match std::env::var("NGX_OBJS") {
+        Ok(v) => PathBuf::from(v).canonicalize()?,
+        #[cfg(feature = "vendored")]
+        Err(_) => vendored::build()?,
+        #[cfg(not(feature = "vendored"))]
+        Err(_) => panic!("\"nginx-sys/vendored\" feature is disabled and NGX_OBJS is not specified"),
     };
     // Hint cargo to rebuild if any of the these environment variables values change
     // because they will trigger a recompilation of NGINX with different parameters
