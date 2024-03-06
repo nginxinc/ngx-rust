@@ -9,7 +9,7 @@ license = "Apache-2.0"
 ngx = { path = "../" }
 aws-sign-v4 = "0.2.0"
 chrono = "0.4.23"
-http = "0.2.9"
+http = "0.2.12"
 libc = "0.2.140"
 
 [[example]]
