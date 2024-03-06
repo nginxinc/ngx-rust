@@ -94,12 +94,13 @@ const NGX_LINUX_ADDITIONAL_OPTS: [&str; 3] = [
     "--with-cc-opt=-g -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC",
     "--with-ld-opt=-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie",
 ];
-const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 9] = [
+const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 10] = [
     "DEBUG",
     "OUT_DIR",
     "ZLIB_VERSION",
     "PCRE2_VERSION",
     "OPENSSL_VERSION",
+    "NGX_OBJS",
     "NGX_VERSION",
     "CARGO_CFG_TARGET_OS",
     "CARGO_MANIFEST_DIR",
@@ -111,18 +112,23 @@ const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 9] = [
 /// extract them, execute autoconf `configure` for NGINX, compile NGINX and finally install
 /// NGINX in a subdirectory with the project.
 fn main() -> Result<(), Box<dyn StdError>> {
-    println!("Building NGINX");
-    // Create .cache directory
-    let cache_dir = make_cache_dir()?;
-    println!("Cache directory created");
-    // Import GPG keys used to verify dependency tarballs
-    import_gpg_keys(&cache_dir)?;
-    println!("GPG keys imported");
-    // Ensure GPG directory has the correct permissions
-    ensure_gpg_permissions(&cache_dir)?;
-    println!("Verified GPG permissions");
-    // Configure and Compile NGINX
-    let (_nginx_install_dir, nginx_src_dir) = compile_nginx()?;
+    let nginx_objs_dir = if let Ok(v) = env::var("NGX_OBJS") {
+        PathBuf::from(v).canonicalize()?
+    } else {
+        println!("Building NGINX");
+        // Create .cache directory
+        let cache_dir = make_cache_dir()?;
+        println!("Cache directory created");
+        // Import GPG keys used to verify dependency tarballs
+        import_gpg_keys(&cache_dir)?;
+        println!("GPG keys imported");
+        // Ensure GPG directory has the correct permissions
+        ensure_gpg_permissions(&cache_dir)?;
+        println!("Verified GPG permissions");
+        // Configure and Compile NGINX
+        let (_nginx_install_dir, nginx_src_dir) = compile_nginx()?;
+        nginx_src_dir.join("objs")
+    };
     // Hint cargo to rebuild if any of the these environment variables values change
     // because they will trigger a recompilation of NGINX with different parameters
     for var in ENV_VARS_TRIGGERING_RECOMPILE {
@@ -130,14 +136,15 @@ fn main() -> Result<(), Box<dyn StdError>> {
     }
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=wrapper.h");
+    println!("cargo:rerun-if-changed={}/Makefile", nginx_objs_dir.to_string_lossy());
     // Read autoconf generated makefile for NGINX and generate Rust bindings based on its includes
-    generate_binding(nginx_src_dir);
+    generate_binding(nginx_objs_dir);
     Ok(())
 }
 
 /// Generates Rust bindings for NGINX
-fn generate_binding(nginx_source_dir: PathBuf) {
-    let autoconf_makefile_path = nginx_source_dir.join("objs").join("Makefile");
+fn generate_binding(nginx_objs_dir: PathBuf) {
+    let autoconf_makefile_path = nginx_objs_dir.join("Makefile");
     let clang_args: Vec<String> = parse_includes_from_makefile(&autoconf_makefile_path)
         .into_iter()
         .map(|path| format!("-I{}", path.to_string_lossy()))
