@@ -17,8 +17,11 @@ crate-type = ["staticlib", "rlib"]
 
 [build-dependencies]
 bindgen = "0.69.4"
-which = "6.0.0"
-duct = "0.13.7"
-ureq = { version = "2.9.6", features = ["tls"] }
-flate2 = "1.0.28"
-tar = "0.4.40"
+duct = { version = "0.13.7", optional = true }
+flate2 = { version = "1.0.28", optional = true }
+tar =  { version = "0.4.40", optional = true }
+ureq = { version = "2.9.6", features = ["tls"], optional = true }
+which = { version = "6.0.0", optional = true }
+
+[features]
+vendored = ["dep:which", "dep:duct", "dep:ureq", "dep:flate2", "dep:tar"]
