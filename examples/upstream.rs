@@ -250,7 +250,7 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
             NGX_LOG_EMERG as usize,
             cf,
             0,
-            "CUSTOM UPSTREAM no upstream srv_conf".as_bytes().as_ptr() as *const Ptr,
+            "CUSTOM UPSTREAM no upstream srv_conf".as_bytes().as_ptr() as *const c_char,
         );
         return isize::from(Status::NGX_ERROR);
     }
@@ -266,7 +266,7 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
             NGX_LOG_EMERG as usize,
             cf,
             0,
-            "CUSTOM UPSTREAM failed calling init_upstream".as_bytes().as_ptr() as *const Ptr,
+            "CUSTOM UPSTREAM failed calling init_upstream".as_bytes().as_ptr() as *const c_char,
         );
         return isize::from(Status::NGX_ERROR);
     }
@@ -299,11 +299,11 @@ unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
                 NGX_LOG_EMERG as usize,
                 cf,
                 0,
-                "invalid value \"%V\" in \"%V\" directive".as_bytes().as_ptr() as *const Ptr,
+                "invalid value \"%V\" in \"%V\" directive".as_bytes().as_ptr() as *const c_char,
                 value[1],
                 &(*cmd).name,
             );
-            return usize::MAX as *mut Ptr;
+            return usize::MAX as *mut c_char;
         }
         ccf.max = n as u32;
     }
@@ -344,7 +344,7 @@ impl HTTPModule for Module {
                 0,
                 "CUSTOM UPSTREAM could not allocate memory for config"
                     .as_bytes()
-                    .as_ptr() as *const Ptr,
+                    .as_ptr() as *const c_char,
             );
             return std::ptr::null_mut();
         }
