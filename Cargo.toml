@@ -21,5 +21,8 @@ keywords = ["nginx", "module", "sys"]
 [dependencies]
 nginx-sys = { path = "nginx-sys", version = "0.5.0"}
 
+[features]
+default = ["nginx-sys/vendored"]
+
 [badges]
 maintenance = { status = "experimental" }
