@@ -118,8 +118,10 @@ fn main() -> Result<(), Box<dyn StdError>> {
     // Import GPG keys used to verify dependency tarballs
     import_gpg_keys(&cache_dir)?;
     println!("GPG keys imported");
-    // Ensure GPG directory has the correct permissions
-    ensure_gpg_permissions(&cache_dir)?;
+    // Ensure GPG directory has the correct permissions, if gpg is available
+    if gpg_path().is_some() {
+        ensure_gpg_permissions(&cache_dir)?;
+    }
     println!("Verified GPG permissions");
     // Configure and Compile NGINX
     let (_nginx_install_dir, nginx_src_dir) = compile_nginx()?;
