@@ -57,7 +57,7 @@ pub use bindings::*;
 /// * `data` - The string slice to convert to a raw pointer.
 ///
 /// # Safety
-/// This function is marked as unsafe because it involves raw pointer manipulation and direct memory allocation using `ngx_palloc`.
+/// This function is marked as unsafe because it involves raw pointer manipulation and direct memory allocation using `ngx_pnalloc`.
 ///
 /// # Returns
 /// A raw pointer (`*mut u_char`) to the allocated memory containing the converted string data.
@@ -69,7 +69,7 @@ pub use bindings::*;
 /// let ptr = str_to_uchar(pool, data);
 /// ```
 pub unsafe fn str_to_uchar(pool: *mut ngx_pool_t, data: &str) -> *mut u_char {
-    let ptr: *mut u_char = ngx_palloc(pool, data.len() as _) as _;
+    let ptr: *mut u_char = ngx_pnalloc(pool, data.len()) as _;
     copy_nonoverlapping(data.as_ptr(), ptr, data.len());
     ptr
 }
