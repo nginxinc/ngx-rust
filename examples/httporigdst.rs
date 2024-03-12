@@ -28,7 +28,7 @@ impl Default for NgxHttpOrigDstCtx {
 
 impl NgxHttpOrigDstCtx {
     pub fn save(&mut self, addr: &str, port: in_port_t, pool: &mut core::Pool) -> core::Status {
-        let addr_data = pool.alloc(addr.len());
+        let addr_data = pool.alloc_unaligned(addr.len());
         if addr_data.is_null() {
             return core::Status::NGX_ERROR;
         }
@@ -37,7 +37,7 @@ impl NgxHttpOrigDstCtx {
         self.orig_dst_addr.data = addr_data as *mut u8;
 
         let port_str = port.to_string();
-        let port_data = pool.alloc(port_str.len());
+        let port_data = pool.alloc_unaligned(port_str.len());
         if port_data.is_null() {
             return core::Status::NGX_ERROR;
         }

@@ -85,6 +85,7 @@ impl Pool {
     }
 
     /// Allocates memory from the pool of the specified size.
+    /// The resulting pointer is aligned to a platform word size.
     ///
     /// Returns a raw pointer to the allocated memory.
     pub fn alloc(&mut self, size: usize) -> *mut c_void {
@@ -92,6 +93,7 @@ impl Pool {
     }
 
     /// Allocates memory for a type from the pool.
+    /// The resulting pointer is aligned to a platform word size.
     ///
     /// Returns a typed pointer to the allocated memory.
     pub fn alloc_type<T: Copy>(&mut self) -> *mut T {
@@ -99,6 +101,7 @@ impl Pool {
     }
 
     /// Allocates zeroed memory from the pool of the specified size.
+    /// The resulting pointer is aligned to a platform word size.
     ///
     /// Returns a raw pointer to the allocated memory.
     pub fn calloc(&mut self, size: usize) -> *mut c_void {
@@ -106,10 +109,25 @@ impl Pool {
     }
 
     /// Allocates zeroed memory for a type from the pool.
+    /// The resulting pointer is aligned to a platform word size.
     ///
     /// Returns a typed pointer to the allocated memory.
     pub fn calloc_type<T: Copy>(&mut self) -> *mut T {
         self.calloc(mem::size_of::<T>()) as *mut T
+    }
+
+    /// Allocates unaligned memory from the pool of the specified size.
+    ///
+    /// Returns a raw pointer to the allocated memory.
+    pub fn alloc_unaligned(&mut self, size: usize) -> *mut c_void {
+        unsafe { ngx_pnalloc(self.0, size) }
+    }
+
+    /// Allocates unaligned memory for a type from the pool.
+    ///
+    /// Returns a typed pointer to the allocated memory.
+    pub fn alloc_type_unaligned<T: Copy>(&mut self) -> *mut T {
+        self.alloc_unaligned(mem::size_of::<T>()) as *mut T
     }
 
     /// Allocates memory for a value of a specified type and adds a cleanup handler to the memory pool.
