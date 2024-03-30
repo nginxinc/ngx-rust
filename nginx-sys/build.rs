@@ -23,14 +23,16 @@ const ZLIB_DEFAULT_VERSION: &str = "1.3.1";
 /// Key 1: Mark Adler's public key. For zlib 1.3.1 and earlier
 const ZLIB_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "5ED46A6721D365587791E2AA783FCD8E58BCAFBA");
 const ZLIB_DOWNLOAD_URL_PREFIX: &str = "https://github.com/madler/zlib/releases/download";
-/// The default version of pcre2 to use if the `PCRE2_VERSION` environment variable is not present
+/// The default version of pcre to use if the `PCRE2_VERSION` environment variable is not present
+const PCRE1_DEFAULT_VERSION: &str = "8.45";
 const PCRE2_DEFAULT_VERSION: &str = "10.42";
 /// Key 1: Phillip Hazel's public key. For PCRE2 10.42 and earlier
 const PCRE2_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "45F68D54BBE23FB3039B46E59766E084FB0F43D8");
 const PCRE1_DOWNLOAD_URL_PREFIX: &str = "https://sourceforge.net/projects/pcre/files/pcre";
 const PCRE2_DOWNLOAD_URL_PREFIX: &str = "https://github.com/PCRE2Project/pcre2/releases/download";
 /// The default version of openssl to use if the `OPENSSL_VERSION` environment variable is not present
-const OPENSSL_DEFAULT_VERSION: &str = "3.2.1";
+const OPENSSL1_DEFAULT_VERSION: &str = "1.1.1w";
+const OPENSSL3_DEFAULT_VERSION: &str = "3.2.1";
 const OPENSSL_GPG_SERVER_AND_KEY_IDS: (&str, &str) = (
     UBUNTU_KEYSEVER,
     "\
@@ -199,14 +201,11 @@ build process:
    integrity of the downloaded files will not be verified.
 */
 
-fn zlib_archive_url() -> String {
-    let version = env::var("ZLIB_VERSION").unwrap_or_else(|_| ZLIB_DEFAULT_VERSION.to_string());
+fn zlib_archive_url(version: &String) -> String {
     format!("{ZLIB_DOWNLOAD_URL_PREFIX}/v{version}/zlib-{version}.tar.gz")
 }
 
-// keep fn name as compat
-fn pcre2_archive_url() -> String {
-    let version = env::var("PCRE2_VERSION").unwrap_or_else(|_| PCRE2_DEFAULT_VERSION.to_string());
+fn pcre_archive_url(version: &String) -> String {
     // We can distinguish pcre1/pcre2 by checking whether the second character is '.', because the final version of pcre1 is 8.45 and the first one of pcre2 is 10.00.
     if version.chars().nth(1).is_some_and(|c| c == '.') {
         format!("{PCRE1_DOWNLOAD_URL_PREFIX}/{version}/pcre-{version}.tar.gz")
@@ -215,8 +214,7 @@ fn pcre2_archive_url() -> String {
     }
 }
 
-fn openssl_archive_url() -> String {
-    let version = env::var("OPENSSL_VERSION").unwrap_or_else(|_| OPENSSL_DEFAULT_VERSION.to_string());
+fn openssl_archive_url(version: &String) -> String {
     if version.starts_with("1.1.1") {
         let version_hyphened = version.replace(".", "_");
         format!("{OPENSSL_DOWNLOAD_URL_PREFIX}/OpenSSL_{version_hyphened}/openssl-{version}.tar.gz")
@@ -225,19 +223,44 @@ fn openssl_archive_url() -> String {
     }
 }
 
-fn nginx_archive_url() -> String {
-    let version = env::var("NGX_VERSION").unwrap_or_else(|_| NGX_DEFAULT_VERSION.to_string());
+fn nginx_archive_url(version: &String) -> String {
     format!("{NGX_DOWNLOAD_URL_PREFIX}/nginx-{version}.tar.gz")
 }
 
 /// Returns a list of tuples containing the URL to a tarball archive and the GPG signature used
 /// to validate the integrity of the tarball.
 fn all_archives() -> Vec<(String, String)> {
+    let ngx_version = env::var("NGX_VERSION").unwrap_or_else(|_| NGX_DEFAULT_VERSION.into());
+    let zlib_version = env::var("ZLIB_VERSION").unwrap_or_else(|_| ZLIB_DEFAULT_VERSION.into());
+    // keep env name `PCRE2_VERSION` for compat
+    // Nginx had started supporting pcre2 and openssl3 since 1.22.0
+    let ngx_version_vec: Vec<i16> = ngx_version.split('.').map(|s| s.parse().unwrap_or(-1)).collect();
+    let is_after_1_22 = (ngx_version_vec.len() >= 2)
+        && (ngx_version_vec[0] > 1 || (ngx_version_vec[0] == 1 && ngx_version_vec[1] >= 22));
+    let pcre_version = env::var("PCRE2_VERSION").unwrap_or_else(|_| {
+        if is_after_1_22 {
+            PCRE2_DEFAULT_VERSION
+        } else {
+            PCRE1_DEFAULT_VERSION
+        }
+        .into()
+    });
+    let openssl_version = env::var("OPENSSL_VERSION").unwrap_or_else(|_| {
+        if is_after_1_22 {
+            OPENSSL3_DEFAULT_VERSION
+        } else {
+            OPENSSL1_DEFAULT_VERSION
+        }
+        .into()
+    });
+    fn easy_make_url_pair(tar_url: String, pgp_ext: &str) -> (String, String) {
+        (tar_url.clone(), format!("{tar_url}.{pgp_ext}"))
+    }
     vec![
-        (zlib_archive_url(), format!("{}.asc", zlib_archive_url())),
-        (pcre2_archive_url(), format!("{}.sig", pcre2_archive_url())),
-        (openssl_archive_url(), format!("{}.asc", openssl_archive_url())),
-        (nginx_archive_url(), format!("{}.asc", nginx_archive_url())),
+        easy_make_url_pair(zlib_archive_url(&zlib_version), "asc"),
+        easy_make_url_pair(pcre_archive_url(&pcre_version), "sig"),
+        easy_make_url_pair(openssl_archive_url(&openssl_version), "asc"),
+        easy_make_url_pair(nginx_archive_url(&ngx_version), "asc"),
     ]
 }
 
