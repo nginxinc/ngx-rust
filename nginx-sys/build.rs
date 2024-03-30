@@ -217,7 +217,12 @@ fn pcre2_archive_url() -> String {
 
 fn openssl_archive_url() -> String {
     let version = env::var("OPENSSL_VERSION").unwrap_or_else(|_| OPENSSL_DEFAULT_VERSION.to_string());
-    format!("{OPENSSL_DOWNLOAD_URL_PREFIX}/openssl-{version}/openssl-{version}.tar.gz")
+    if version.starts_with("1.1.1") {
+        let version_hyphened = version.replace(".", "_");
+        format!("{OPENSSL_DOWNLOAD_URL_PREFIX}/OpenSSL_{version_hyphened}/openssl-{version}.tar.gz")
+    } else {
+        format!("{OPENSSL_DOWNLOAD_URL_PREFIX}/openssl-{version}/openssl-{version}.tar.gz")
+    }
 }
 
 fn nginx_archive_url() -> String {
