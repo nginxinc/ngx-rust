@@ -19,8 +19,8 @@ In short, this SDK allows writing NGINX modules using the Rust language.
 NGINX modules can be built against a particular version of NGINX. The following environment variables can be used to specify a particular version of NGINX or an NGINX dependency:
 
 * `ZLIB_VERSION` (default 1.3.1) -
-* `PCRE2_VERSION` (default 10.42)
-* `OPENSSL_VERSION` (default 3.2.1)
+* `PCRE2_VERSION` (default 10.42 for NGINX 1.22.0 and later, or 8.45 for earlier)
+* `OPENSSL_VERSION` (default 3.2.1 for NGINX 1.22.0 and later, or 1.1.1w for earlier)
 * `NGX_VERSION` (default 1.24.0) - NGINX OSS version
 * `NGX_DEBUG` (default to false)-  if set to true, then will compile NGINX `--with-debug` option
 
