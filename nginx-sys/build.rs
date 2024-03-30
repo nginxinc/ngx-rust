@@ -27,6 +27,7 @@ const ZLIB_DOWNLOAD_URL_PREFIX: &str = "https://github.com/madler/zlib/releases/
 const PCRE2_DEFAULT_VERSION: &str = "10.42";
 /// Key 1: Phillip Hazel's public key. For PCRE2 10.42 and earlier
 const PCRE2_GPG_SERVER_AND_KEY_ID: (&str, &str) = (UBUNTU_KEYSEVER, "45F68D54BBE23FB3039B46E59766E084FB0F43D8");
+const PCRE1_DOWNLOAD_URL_PREFIX: &str = "https://sourceforge.net/projects/pcre/files/pcre";
 const PCRE2_DOWNLOAD_URL_PREFIX: &str = "https://github.com/PCRE2Project/pcre2/releases/download";
 /// The default version of openssl to use if the `OPENSSL_VERSION` environment variable is not present
 const OPENSSL_DEFAULT_VERSION: &str = "3.2.1";
@@ -203,9 +204,15 @@ fn zlib_archive_url() -> String {
     format!("{ZLIB_DOWNLOAD_URL_PREFIX}/v{version}/zlib-{version}.tar.gz")
 }
 
+// keep fn name as compat
 fn pcre2_archive_url() -> String {
     let version = env::var("PCRE2_VERSION").unwrap_or_else(|_| PCRE2_DEFAULT_VERSION.to_string());
-    format!("{PCRE2_DOWNLOAD_URL_PREFIX}/pcre2-{version}/pcre2-{version}.tar.gz")
+    // We can distinguish pcre1/pcre2 by checking whether the second character is '.', because the final version of pcre1 is 8.45 and the first one of pcre2 is 10.00.
+    if version.chars().nth(1).is_some_and(|c| c == '.') {
+        format!("{PCRE1_DOWNLOAD_URL_PREFIX}/{version}/pcre-{version}.tar.gz")
+    } else {
+        format!("{PCRE2_DOWNLOAD_URL_PREFIX}/pcre2-{version}/pcre2-{version}.tar.gz")
+    }
 }
 
 fn openssl_archive_url() -> String {
@@ -514,20 +521,20 @@ fn extract_all_archives(cache_dir: &Path) -> Result<Vec<(String, PathBuf)>, Box<
 /// Invoke external processes to run autoconf `configure` to generate a makefile for NGINX and
 /// then run `make install`.
 fn compile_nginx() -> Result<(PathBuf, PathBuf), Box<dyn StdError>> {
-    fn find_dependency_path<'a>(sources: &'a [(String, PathBuf)], name: &str) -> &'a PathBuf {
+    fn find_dependency_path<'a>(sources: &'a [(String, PathBuf)], name: &str) -> Result<&'a PathBuf, String> {
         sources
             .iter()
             .find(|(n, _)| n == name)
             .map(|(_, p)| p)
-            .unwrap_or_else(|| panic!("Unable to find dependency [{name}] path"))
+            .ok_or(format!("Unable to find dependency [{name}] path"))
     }
     let cache_dir = make_cache_dir()?;
     let nginx_install_dir = nginx_install_dir(&cache_dir);
     let sources = extract_all_archives(&cache_dir)?;
-    let zlib_src_dir = find_dependency_path(&sources, "zlib");
-    let openssl_src_dir = find_dependency_path(&sources, "openssl");
-    let pcre2_src_dir = find_dependency_path(&sources, "pcre2");
-    let nginx_src_dir = find_dependency_path(&sources, "nginx");
+    let zlib_src_dir = find_dependency_path(&sources, "zlib")?;
+    let openssl_src_dir = find_dependency_path(&sources, "openssl")?;
+    let pcre2_src_dir = find_dependency_path(&sources, "pcre2").or(find_dependency_path(&sources, "pcre"))?;
+    let nginx_src_dir = find_dependency_path(&sources, "nginx")?;
     let nginx_configure_flags = nginx_configure_flags(&nginx_install_dir, zlib_src_dir, openssl_src_dir, pcre2_src_dir);
     let nginx_binary_exists = nginx_install_dir.join("sbin").join("nginx").exists();
     let autoconf_makefile_exists = nginx_src_dir.join("Makefile").exists();
