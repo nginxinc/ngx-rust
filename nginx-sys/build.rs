@@ -48,11 +48,13 @@ const NGX_DEFAULT_VERSION: &str = "1.24.0";
 
 /// Key 1: Konstantin Pavlov's public key. For Nginx 1.25.3 and earlier
 /// Key 2: Sergey Kandaurov's public key. For Nginx 1.25.4
+/// Key 3: Maxim Dounin's public key. At least used for Nginx 1.18.0
 const NGX_GPG_SERVER_AND_KEY_IDS: (&str, &str) = (
     UBUNTU_KEYSEVER,
     "\
 13C82A63B603576156E30A4EA0EA981B66B0D967 \
-D6786CE303D9A9022998DC6CC8464D549AF75C0A",
+D6786CE303D9A9022998DC6CC8464D549AF75C0A \
+B0F4253373F8F6F510D42178520A9993A1C052F8",
 );
 
 const NGX_DOWNLOAD_URL_PREFIX: &str = "https://nginx.org/download";
