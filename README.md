@@ -144,6 +144,10 @@ Please refer to the [Contributing Guidelines](CONTRIBUTING.md) when doing a PR.
 This project uses some great work from [dcoles/nginx-rs](https://github.com/dcoles/nginx-rs),
 [arvancloud/nginx-rs](https://github.com/arvancloud/nginx-rs).
 
+## Projects using the SDK
+
+[ngx-strict-sni](https://github.com/JyJyJcr/ngx-strict-sni) - Strict SNI validator for Nginx
+
 ## License
 
 All code in this repository is licensed under the
