@@ -99,7 +99,7 @@ const NGX_LINUX_ADDITIONAL_OPTS: [&str; 3] = [
     "--with-cc-opt=-g -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC",
     "--with-ld-opt=-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie",
 ];
-const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 10] = [
+const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 11] = [
     "DEBUG",
     "OUT_DIR",
     "ZLIB_VERSION",
@@ -110,6 +110,7 @@ const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 10] = [
     "CARGO_MANIFEST_DIR",
     "CARGO_TARGET_TMPDIR",
     "CACHE_DIR",
+    "NGX_INSTALL_ROOT_DIR",
 ];
 
 /// Function invoked when `cargo build` is executed.
@@ -283,7 +284,7 @@ fn source_output_dir(cache_dir: &Path) -> PathBuf {
 fn nginx_install_dir(base_dir: &Path) -> PathBuf {
     let nginx_version = env::var("NGX_VERSION").unwrap_or_else(|_| NGX_DEFAULT_VERSION.to_string());
     let platform = format!("{}-{}", env::consts::OS, env::consts::ARCH);
-    base_dir.join("nginx").join(nginx_version).join(platform)
+    base_dir.join(nginx_version).join(platform)
 }
 
 /// Ensure the correct permissions are applied to the local gnupg directory
@@ -557,7 +558,10 @@ fn compile_nginx(cache_dir: &Path) -> Result<(PathBuf, PathBuf), Box<dyn StdErro
             .map(|(_, p)| p)
             .ok_or(format!("Unable to find dependency [{name}] path"))
     }
-    let nginx_install_dir = nginx_install_dir(&cache_dir);
+    let nginx_install_base_dir = env::var("NGX_INSTALL_ROOT_DIR")
+        .map(PathBuf::from)
+        .unwrap_or(cache_dir.join("nginx"));
+    let nginx_install_dir = nginx_install_dir(&nginx_install_base_dir);
     let sources = extract_all_archives(&cache_dir)?;
     let zlib_src_dir = find_dependency_path(&sources, "zlib")?;
     let openssl_src_dir = find_dependency_path(&sources, "openssl")?;
