@@ -130,7 +130,7 @@ fn main() -> Result<(), Box<dyn StdError>> {
     }
     println!("Verified GPG permissions");
     // Configure and Compile NGINX
-    let (_nginx_install_dir, nginx_src_dir) = compile_nginx()?;
+    let (_nginx_install_dir, nginx_src_dir) = compile_nginx(&cache_dir)?;
     // Hint cargo to rebuild if any of the these environment variables values change
     // because they will trigger a recompilation of NGINX with different parameters
     for var in ENV_VARS_TRIGGERING_RECOMPILE {
@@ -280,7 +280,7 @@ fn source_output_dir(cache_dir: &Path) -> PathBuf {
 
 #[allow(clippy::ptr_arg)]
 /// Returns the path to install NGINX to
-fn nginx_install_dir(base_dir: &PathBuf) -> PathBuf {
+fn nginx_install_dir(base_dir: &Path) -> PathBuf {
     let nginx_version = env::var("NGX_VERSION").unwrap_or_else(|_| NGX_DEFAULT_VERSION.to_string());
     let platform = format!("{}-{}", env::consts::OS, env::consts::ARCH);
     base_dir.join("nginx").join(nginx_version).join(platform)
@@ -549,7 +549,7 @@ fn extract_all_archives(cache_dir: &Path) -> Result<Vec<(String, PathBuf)>, Box<
 
 /// Invoke external processes to run autoconf `configure` to generate a makefile for NGINX and
 /// then run `make install`.
-fn compile_nginx() -> Result<(PathBuf, PathBuf), Box<dyn StdError>> {
+fn compile_nginx(cache_dir: &Path) -> Result<(PathBuf, PathBuf), Box<dyn StdError>> {
     fn find_dependency_path<'a>(sources: &'a [(String, PathBuf)], name: &str) -> Result<&'a PathBuf, String> {
         sources
             .iter()
@@ -557,7 +557,6 @@ fn compile_nginx() -> Result<(PathBuf, PathBuf), Box<dyn StdError>> {
             .map(|(_, p)| p)
             .ok_or(format!("Unable to find dependency [{name}] path"))
     }
-    let cache_dir = make_cache_dir()?;
     let nginx_install_dir = nginx_install_dir(&cache_dir);
     let sources = extract_all_archives(&cache_dir)?;
     let zlib_src_dir = find_dependency_path(&sources, "zlib")?;
