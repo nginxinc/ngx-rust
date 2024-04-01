@@ -232,11 +232,11 @@ fn nginx_archive_url(version: &String) -> String {
 fn all_archives() -> Vec<(String, String)> {
     let ngx_version = env::var("NGX_VERSION").unwrap_or_else(|_| NGX_DEFAULT_VERSION.into());
     let zlib_version = env::var("ZLIB_VERSION").unwrap_or_else(|_| ZLIB_DEFAULT_VERSION.into());
-    // keep env name `PCRE2_VERSION` for compat
-    // Nginx had started supporting pcre2 and openssl3 since 1.22.0
+    // While Nginx 1.22.0 and later support pcre2 and openssl3, earlier ones only support pcre1 and openssl1. Here provides the appropriate (and as latest as possible) versions of these two dependencies as default, switching `***[major_version]_DEFAULT_VERSION` based on `is_after_1_22`. This facilitates to compile backport versions targeted for Nginx ealier than 1.22.0, which are still used in LTS releases of major Linux distributions.
     let ngx_version_vec: Vec<i16> = ngx_version.split('.').map(|s| s.parse().unwrap_or(-1)).collect();
     let is_after_1_22 = (ngx_version_vec.len() >= 2)
         && (ngx_version_vec[0] > 1 || (ngx_version_vec[0] == 1 && ngx_version_vec[1] >= 22));
+    // keep env name `PCRE2_VERSION` for compat
     let pcre_version = env::var("PCRE2_VERSION").unwrap_or_else(|_| {
         if is_after_1_22 {
             PCRE2_DEFAULT_VERSION
