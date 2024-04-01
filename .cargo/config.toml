@@ -11,3 +11,6 @@ rustflags = [
   "-C", "link-arg=-undefined",
   "-C", "link-arg=dynamic_lookup",
 ]
+
+[env]
+CACHE_DIR = { value = ".cache", relative = true }

@@ -99,7 +99,7 @@ const NGX_LINUX_ADDITIONAL_OPTS: [&str; 3] = [
     "--with-cc-opt=-g -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC",
     "--with-ld-opt=-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie",
 ];
-const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 9] = [
+const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 10] = [
     "DEBUG",
     "OUT_DIR",
     "ZLIB_VERSION",
@@ -109,6 +109,7 @@ const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 9] = [
     "CARGO_CFG_TARGET_OS",
     "CARGO_MANIFEST_DIR",
     "CARGO_TARGET_TMPDIR",
+    "CACHE_DIR",
 ];
 
 /// Function invoked when `cargo build` is executed.
@@ -378,12 +379,12 @@ fn make_cache_dir() -> Result<PathBuf, Box<dyn StdError>> {
     let base_dir = env::var("CARGO_MANIFEST_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| env::current_dir().expect("Failed to get current directory"));
-    // Choose the parent directory of the manifest directory (nginx-sys) as the cache directory
-    // Fail if we do not have a parent directory
-    let cache_dir = base_dir
-        .parent()
-        .expect("Failed to find parent directory of manifest directory")
-        .join(".cache");
+    // Choose `.cache` relative to the manifest directory (nginx-sys) as the default cache directory
+    // Environment variable `CACHE_DIR` overrides this
+    // Recommendation: set env "CACHE_DIR = { value = ".cache", relative = true }" in `.cargo/config.toml` in your project
+    let cache_dir = env::var("CACHE_DIR")
+        .map(PathBuf::from)
+        .unwrap_or(base_dir.join(".cache"));
     if !cache_dir.exists() {
         fs::create_dir_all(&cache_dir)?;
     }
