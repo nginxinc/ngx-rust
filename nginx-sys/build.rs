@@ -253,14 +253,14 @@ fn all_archives() -> Vec<(String, String)> {
         }
         .into()
     });
-    fn easy_make_url_pair(tar_url: String, pgp_ext: &str) -> (String, String) {
+    fn url_pair(tar_url: String, pgp_ext: &str) -> (String, String) {
         (tar_url.clone(), format!("{tar_url}.{pgp_ext}"))
     }
     vec![
-        easy_make_url_pair(zlib_archive_url(&zlib_version), "asc"),
-        easy_make_url_pair(pcre_archive_url(&pcre_version), "sig"),
-        easy_make_url_pair(openssl_archive_url(&openssl_version), "asc"),
-        easy_make_url_pair(nginx_archive_url(&ngx_version), "asc"),
+        url_pair(zlib_archive_url(&zlib_version), "asc"),
+        url_pair(pcre_archive_url(&pcre_version), "sig"),
+        url_pair(openssl_archive_url(&openssl_version), "asc"),
+        url_pair(nginx_archive_url(&ngx_version), "asc"),
     ]
 }
 
