@@ -99,7 +99,7 @@ const NGX_LINUX_ADDITIONAL_OPTS: [&str; 3] = [
     "--with-cc-opt=-g -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC",
     "--with-ld-opt=-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie",
 ];
-const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 11] = [
+const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 12] = [
     "DEBUG",
     "OUT_DIR",
     "ZLIB_VERSION",
@@ -111,6 +111,7 @@ const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 11] = [
     "CARGO_TARGET_TMPDIR",
     "CACHE_DIR",
     "NGX_INSTALL_ROOT_DIR",
+    "NGX_INSTALL_DIR",
 ];
 
 /// Function invoked when `cargo build` is executed.
@@ -561,7 +562,9 @@ fn compile_nginx(cache_dir: &Path) -> Result<(PathBuf, PathBuf), Box<dyn StdErro
     let nginx_install_base_dir = env::var("NGX_INSTALL_ROOT_DIR")
         .map(PathBuf::from)
         .unwrap_or(cache_dir.join("nginx"));
-    let nginx_install_dir = nginx_install_dir(&nginx_install_base_dir);
+    let nginx_install_dir = env::var("NGX_INSTALL_DIR")
+        .map(PathBuf::from)
+        .unwrap_or(nginx_install_dir(&nginx_install_base_dir));
     let sources = extract_all_archives(&cache_dir)?;
     let zlib_src_dir = find_dependency_path(&sources, "zlib")?;
     let openssl_src_dir = find_dependency_path(&sources, "openssl")?;
