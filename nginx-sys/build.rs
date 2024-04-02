@@ -565,7 +565,7 @@ fn compile_nginx(cache_dir: &Path) -> Result<(PathBuf, PathBuf), Box<dyn StdErro
     let nginx_install_dir = env::var("NGX_INSTALL_DIR")
         .map(PathBuf::from)
         .unwrap_or(nginx_install_dir(&nginx_install_base_dir));
-    let sources = extract_all_archives(&cache_dir)?;
+    let sources = extract_all_archives(cache_dir)?;
     let zlib_src_dir = find_dependency_path(&sources, "zlib")?;
     let openssl_src_dir = find_dependency_path(&sources, "openssl")?;
     let pcre2_src_dir = find_dependency_path(&sources, "pcre2").or(find_dependency_path(&sources, "pcre"))?;
