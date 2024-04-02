@@ -18,9 +18,9 @@ In short, this SDK allows writing NGINX modules using the Rust language.
 
 NGINX modules can be built against a particular version of NGINX. The following environment variables can be used to specify a particular version of NGINX or an NGINX dependency:
 
-* `ZLIB_VERSION` (default 1.3.1) -
-* `PCRE2_VERSION` (default 10.42 for NGINX 1.22.0 and later, or 8.45 for earlier)
-* `OPENSSL_VERSION` (default 3.2.1 for NGINX 1.22.0 and later, or 1.1.1w for earlier)
+* `ZLIB_VERSION` (default 1.3.1) - zlib version
+* `PCRE2_VERSION` (default 10.42 for NGINX 1.22.0 and later, or 8.45 for earlier) - PCRE1 or PCRE2 version
+* `OPENSSL_VERSION` (default 3.2.1 for NGINX 1.22.0 and later, or 1.1.1w for earlier) - OpenSSL version
 * `NGX_VERSION` (default 1.24.0) - NGINX OSS version
 * `NGX_DEBUG` (default to false)-  if set to true, then will compile NGINX `--with-debug` option
 
@@ -38,8 +38,14 @@ cargo build --package=examples --examples --features=linux --release
 After compilation, the modules can be found in the path `target/release/examples/` ( with the `.so` file extension for
 Linux or `.dylib` for MacOS).
 
-Additionally, the folder  `.cache/nginx/{NGX_VERSION}/{OS}/` will contain the compiled version of NGINX used to build
+Additionally, the folder  `.cache/nginx/{NGX_VERSION}/{OS}-{Arch}/` will contain the compiled version of NGINX used to build
 the SDK. You can start NGINX directly from this directory if you want to test the module.
+
+The following environment variables can be used to change locations of cache directory and NGINX directory:
+
+* `CACHE_DIR` (default `[nginx-sys's root directory]/.cache`) - the directory containing cache files, means PGP keys, tarballs, PGP signatures, and unpacked source codes. It also contains compiled NGINX in default configuration.
+* `NGINX_INSTALL_ROOT_DIR` (default `{CACHE_DIR}/nginx`) - the directory containing the series of compiled NGINX in its subdirectories
+* `NGINX_INSTALL_DIR` (default `{NGINX_INSTALL_BASE_DIR}/{NGX_VERSION}/{OS}-{Arch}`) - the directory containing the NGINX compiled in the build
 
 ### Mac OS dependencies
 
