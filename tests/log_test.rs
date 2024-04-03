@@ -17,8 +17,8 @@ impl Default for Nginx {
     /// create nginx with default
     fn default() -> Nginx {
         let path = env::current_dir().unwrap();
-        let version = env::var("NGX_VERSION").unwrap_or_else(|_| NGX_DEFAULT_VERSION.to_string());
-        let platform = format!("{}-{}", env::consts::OS, env::consts::ARCH);
+        let version = env::var("NGX_VERSION").unwrap_or(NGX_DEFAULT_VERSION.into());
+        let platform = target_triple::TARGET;
         let ngx_path = format!(".cache/nginx/{}/{}", version, platform);
         let install_path = format!("{}/{}", path.display(), ngx_path);
         Nginx { install_path }

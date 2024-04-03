@@ -23,3 +23,6 @@ nginx-sys = { path = "nginx-sys", version = "0.5.0"}
 
 [badges]
 maintenance = { status = "experimental" }
+
+[dev-dependencies]
+target-triple = "0.1.2"
