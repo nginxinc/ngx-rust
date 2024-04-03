@@ -38,14 +38,14 @@ cargo build --package=examples --examples --features=linux --release
 After compilation, the modules can be found in the path `target/release/examples/` ( with the `.so` file extension for
 Linux or `.dylib` for MacOS).
 
-Additionally, the folder  `.cache/nginx/{NGX_VERSION}/{OS}-{Arch}/` will contain the compiled version of NGINX used to build
+Additionally, the folder  `.cache/nginx/{NGX_VERSION}/{TARGET}` (`{TARGET}` means rustc's target triple string) will contain the compiled version of NGINX used to build
 the SDK. You can start NGINX directly from this directory if you want to test the module.
 
 The following environment variables can be used to change locations of cache directory and NGINX directory:
 
 * `CACHE_DIR` (default `[nginx-sys's root directory]/.cache`) - the directory containing cache files, means PGP keys, tarballs, PGP signatures, and unpacked source codes. It also contains compiled NGINX in default configuration.
 * `NGINX_INSTALL_ROOT_DIR` (default `{CACHE_DIR}/nginx`) - the directory containing the series of compiled NGINX in its subdirectories
-* `NGINX_INSTALL_DIR` (default `{NGINX_INSTALL_BASE_DIR}/{NGX_VERSION}/{OS}-{Arch}`) - the directory containing the NGINX compiled in the build
+* `NGINX_INSTALL_DIR` (default `{NGINX_INSTALL_BASE_DIR}/{NGX_VERSION}/{TARGET}`) - the directory containing the NGINX compiled in the build
 
 ### Mac OS dependencies
 
