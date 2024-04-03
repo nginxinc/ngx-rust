@@ -272,20 +272,17 @@ fn gpg_path() -> Option<PathBuf> {
 }
 
 /// Returns the base path to extract tarball contents into
-fn source_output_dir(cache_dir: &Path) -> PathBuf {
-    env::var("CARGO_TARGET_TMPDIR").map(PathBuf::from).unwrap_or_else(|_| {
-        cache_dir
-            .join("src")
-            .join(format!("{}-{}", env::consts::OS, env::consts::ARCH))
-    })
+fn source_output_dir(cache_dir: &Path, target: &str) -> PathBuf {
+    env::var("CARGO_TARGET_TMPDIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| cache_dir.join("src").join(target))
 }
 
 #[allow(clippy::ptr_arg)]
 /// Returns the path to install NGINX to
-fn nginx_install_dir(base_dir: &Path) -> PathBuf {
+fn nginx_install_dir(base_dir: &Path, target: &str) -> PathBuf {
     let nginx_version = env::var("NGX_VERSION").unwrap_or_else(|_| NGX_DEFAULT_VERSION.to_string());
-    let platform = format!("{}-{}", env::consts::OS, env::consts::ARCH);
-    base_dir.join(nginx_version).join(platform)
+    base_dir.join(nginx_version).join(target)
 }
 
 /// Ensure the correct permissions are applied to the local gnupg directory
@@ -533,10 +530,10 @@ fn extract_archive(
 }
 
 /// Extract all of the tarballs into subdirectories within the source base directory.
-fn extract_all_archives(cache_dir: &Path) -> Result<Vec<(String, PathBuf)>, Box<dyn StdError>> {
+fn extract_all_archives(cache_dir: &Path, target: &str) -> Result<Vec<(String, PathBuf)>, Box<dyn StdError>> {
     let archives = all_archives();
     let mut sources = Vec::new();
-    let extract_output_base_dir = source_output_dir(cache_dir);
+    let extract_output_base_dir = source_output_dir(cache_dir, target);
     if !extract_output_base_dir.exists() {
         fs::create_dir_all(&extract_output_base_dir)?;
     }
@@ -559,13 +556,14 @@ fn compile_nginx(cache_dir: &Path) -> Result<(PathBuf, PathBuf), Box<dyn StdErro
             .map(|(_, p)| p)
             .ok_or(format!("Unable to find dependency [{name}] path"))
     }
+    let target = env::var("TARGET")?;
     let nginx_install_base_dir = env::var("NGX_INSTALL_ROOT_DIR")
         .map(PathBuf::from)
         .unwrap_or(cache_dir.join("nginx"));
     let nginx_install_dir = env::var("NGX_INSTALL_DIR")
         .map(PathBuf::from)
-        .unwrap_or(nginx_install_dir(&nginx_install_base_dir));
-    let sources = extract_all_archives(cache_dir)?;
+        .unwrap_or(nginx_install_dir(&nginx_install_base_dir, &target));
+    let sources = extract_all_archives(cache_dir, &target)?;
     let zlib_src_dir = find_dependency_path(&sources, "zlib")?;
     let openssl_src_dir = find_dependency_path(&sources, "openssl")?;
     let pcre2_src_dir = find_dependency_path(&sources, "pcre2").or(find_dependency_path(&sources, "pcre"))?;
