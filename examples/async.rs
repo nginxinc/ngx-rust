@@ -7,6 +7,7 @@ use ngx::ffi::{
 use ngx::http::MergeConfigError;
 use ngx::{core, core::Status, http, http::HTTPModule};
 use ngx::{http_request_handler, ngx_log_debug_http, ngx_modules, ngx_null_command, ngx_string};
+use std::borrow::{Borrow, BorrowMut};
 use std::os::raw::{c_char, c_void};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -21,7 +22,7 @@ impl http::HTTPModule for Module {
     type LocConf = ModuleConfig;
 
     unsafe extern "C" fn postconfiguration(cf: *mut ngx_conf_t) -> ngx_int_t {
-        let cmcf = http::ngx_http_conf_get_module_main_conf(cf, &ngx_http_core_module);
+        let cmcf = http::ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module.borrow());
 
         let h = ngx_array_push(&mut (*cmcf).phases[ngx_http_phases_NGX_HTTP_ACCESS_PHASE as usize].handlers)
             as *mut ngx_http_handler_pt;
@@ -131,7 +132,7 @@ unsafe extern "C" fn check_async_work_done(event: *mut ngx_event_t) {
         // this doesn't have have good performance but works as a simple thread-safe example and doesn't causes
         // segfault. The best method that provides both thread-safety and performance requires
         // an nginx patch.
-        post_event(event, &ngx_posted_events as *const _ as _);
+        post_event(event, ngx_posted_events.borrow_mut());
     }
 }
 
@@ -162,7 +163,7 @@ unsafe fn post_event(event: *mut ngx_event_t, queue: *mut ngx_queue_s) {
 }
 
 http_request_handler!(async_access_handler, |request: &mut http::Request| {
-    let co = unsafe { request.get_module_loc_conf::<ModuleConfig>(&ngx_http_async_module) };
+    let co = unsafe { request.get_module_loc_conf::<ModuleConfig>(ngx_http_async_module.borrow()) };
     let co = co.expect("module config is none");
     if !co.enable {
         return core::Status::NGX_DECLINED;
@@ -203,7 +204,7 @@ http_request_handler!(async_access_handler, |request: &mut http::Request| {
         event.data = Arc::into_raw(event_data.clone()) as _;
         event.log = (*ngx_cycle).log;
 
-        post_event(event, &ngx_posted_events as *const _ as _);
+        post_event(event, ngx_posted_events.borrow_mut());
     }
 
     ngx_log_debug_http!(request, "async module enabled: {}", co.enable);
