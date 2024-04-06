@@ -7,8 +7,9 @@ use ngx::ffi::{
 use ngx::http::MergeConfigError;
 use ngx::{core, core::Status, http, http::HTTPModule};
 use ngx::{http_request_handler, ngx_log_debug_http, ngx_modules, ngx_null_command, ngx_string};
-use std::borrow::{Borrow, BorrowMut};
+use std::borrow::Borrow;
 use std::os::raw::{c_char, c_void};
+use std::ptr::addr_of_mut;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Instant;
@@ -132,7 +133,7 @@ unsafe extern "C" fn check_async_work_done(event: *mut ngx_event_t) {
         // this doesn't have have good performance but works as a simple thread-safe example and doesn't causes
         // segfault. The best method that provides both thread-safety and performance requires
         // an nginx patch.
-        post_event(event, ngx_posted_events.borrow_mut());
+        post_event(event, addr_of_mut!(ngx_posted_events));
     }
 }
 
@@ -204,7 +205,7 @@ http_request_handler!(async_access_handler, |request: &mut http::Request| {
         event.data = Arc::into_raw(event_data.clone()) as _;
         event.log = (*ngx_cycle).log;
 
-        post_event(event, ngx_posted_events.borrow_mut());
+        post_event(event, addr_of_mut!(ngx_posted_events));
     }
 
     ngx_log_debug_http!(request, "async module enabled: {}", co.enable);
