@@ -206,3 +206,9 @@ pub unsafe fn add_to_ngx_table(
         table.lowcase_key = str_to_uchar(pool, String::from(key).to_ascii_lowercase().as_str());
     })
 }
+
+/// Provide build metadatas.
+pub mod metadata {
+    /// The path to the Nginx directory used to generate bindings. This constants is aimed at integration tests.
+    pub const NGINX_INSTALL_DIR: &str = env!("NGINX_SYS_NGINX_INSTALL_DIR");
+}

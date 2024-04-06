@@ -1,10 +1,8 @@
-use std::env;
 use std::fs;
 use std::io::Result;
 use std::process::Command;
 use std::process::Output;
 
-const NGX_DEFAULT_VERSION: &str = "1.24.0";
 const NGINX_BIN: &str = "sbin/nginx";
 const NGINX_CONFIG: &str = "conf/nginx.conf";
 
@@ -16,12 +14,9 @@ pub struct Nginx {
 impl Default for Nginx {
     /// create nginx with default
     fn default() -> Nginx {
-        let path = env::current_dir().unwrap();
-        let version = env::var("NGX_VERSION").unwrap_or(NGX_DEFAULT_VERSION.into());
-        let platform = target_triple::TARGET;
-        let ngx_path = format!(".cache/nginx/{}/{}", version, platform);
-        let install_path = format!("{}/{}", path.display(), ngx_path);
-        Nginx { install_path }
+        Nginx {
+            install_path: nginx_sys::metadata::NGINX_INSTALL_DIR.into(),
+        }
     }
 }
 
