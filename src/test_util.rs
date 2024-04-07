@@ -170,11 +170,9 @@ pub fn target_path(target_name: &str) -> std::io::Result<PathBuf> {
     if let Some(cands) = target_dir_cands() {
         for dir in cands {
             if let Ok(iter) = read_dir(dir) {
-                for entry in iter {
-                    if let Ok(entry) = entry {
-                        if entry.file_name() == target_name {
-                            return Ok(entry.path());
-                        }
+                for entry in iter.flatten() {
+                    if entry.file_name() == target_name {
+                        return Ok(entry.path());
                     }
                 }
             }
