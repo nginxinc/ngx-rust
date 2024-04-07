@@ -12,8 +12,6 @@ keywords = ["nginx", "ffi", "sys"]
 [lib]
 crate-type = ["staticlib", "rlib"]
 
-[dependencies]
-
 [build-dependencies]
 bindgen = "0.69.4"
 which = "6.0.0"
