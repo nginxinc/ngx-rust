@@ -151,7 +151,7 @@ impl Nginx {
 }
 
 #[cfg(target_os = "macos")]
-fn target_cands() -> Option<Vec<PathBuf>> {
+fn target_dir_cands() -> Option<Vec<PathBuf>> {
     match std::env::var("DYLD_FALLBACK_LIBRARY_PATH") {
         Ok(cands) => Some(cands.split(':').map(PathBuf::from).collect()),
         Err(_) => None,
@@ -167,7 +167,7 @@ fn target_dir_cands() -> Option<Vec<PathBuf>> {
 
 /// search path and return the path to the target
 pub fn target_path(target_name: &str) -> std::io::Result<PathBuf> {
-    if let Some(cands) = target_cands() {
+    if let Some(cands) = target_dir_cands() {
         for dir in cands {
             if let Ok(iter) = read_dir(dir) {
                 for entry in iter {
