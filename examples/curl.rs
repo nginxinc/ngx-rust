@@ -7,8 +7,8 @@ use ngx::ffi::{
 use ngx::http::MergeConfigError;
 use ngx::{core, core::Status, http, http::HTTPModule};
 use ngx::{http_request_handler, ngx_log_debug_http, ngx_modules, ngx_null_command, ngx_string};
-use std::borrow::Borrow;
 use std::os::raw::{c_char, c_void};
+use std::ptr::addr_of;
 
 struct Module;
 
@@ -18,7 +18,7 @@ impl http::HTTPModule for Module {
     type LocConf = ModuleConfig;
 
     unsafe extern "C" fn postconfiguration(cf: *mut ngx_conf_t) -> ngx_int_t {
-        let cmcf = http::ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module.borrow());
+        let cmcf = http::ngx_http_conf_get_module_main_conf(cf, &*addr_of!(ngx_http_core_module));
 
         let h = ngx_array_push(&mut (*cmcf).phases[ngx_http_phases_NGX_HTTP_ACCESS_PHASE as usize].handlers)
             as *mut ngx_http_handler_pt;
@@ -105,7 +105,7 @@ impl http::Merge for ModuleConfig {
 }
 
 http_request_handler!(curl_access_handler, |request: &mut http::Request| {
-    let co = unsafe { request.get_module_loc_conf::<ModuleConfig>(ngx_http_curl_module.borrow()) };
+    let co = unsafe { request.get_module_loc_conf::<ModuleConfig>(&*addr_of!(ngx_http_curl_module)) };
     let co = co.expect("module config is none");
 
     ngx_log_debug_http!(request, "curl module enabled: {}", co.enable);
