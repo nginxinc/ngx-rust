@@ -25,9 +25,9 @@ use ngx::{
     ngx_log_debug_http, ngx_log_debug_mask, ngx_modules, ngx_null_command, ngx_string,
 };
 use std::{
-    borrow::Borrow,
     mem,
     os::raw::{c_char, c_void},
+    ptr::addr_of,
     slice,
 };
 
@@ -153,7 +153,7 @@ http_upstream_init_peer_pt!(
         }
 
         let maybe_conf: Option<*const SrvConfig> =
-            unsafe { ngx_http_conf_upstream_srv_conf_immutable(us, ngx_http_upstream_custom_module.borrow()) };
+            unsafe { ngx_http_conf_upstream_srv_conf_immutable(us, &*addr_of!(ngx_http_upstream_custom_module)) };
         if maybe_conf.is_none() {
             return Status::NGX_ERROR;
         }
@@ -245,7 +245,7 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
     ngx_log_debug_mask!(DebugMask::Http, (*cf).log, "CUSTOM UPSTREAM peer init_upstream");
 
     let maybe_conf: Option<*mut SrvConfig> =
-        ngx_http_conf_upstream_srv_conf_mutable(us, ngx_http_upstream_custom_module.borrow());
+        ngx_http_conf_upstream_srv_conf_mutable(us, &*addr_of!(ngx_http_upstream_custom_module));
     if maybe_conf.is_none() {
         ngx_conf_log_error(
             NGX_LOG_EMERG as usize,
@@ -310,7 +310,8 @@ unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
     }
 
     let uscf: *mut ngx_http_upstream_srv_conf_t =
-        ngx_http_conf_get_module_srv_conf(cf, ngx_http_upstream_module.borrow()) as *mut ngx_http_upstream_srv_conf_t;
+        ngx_http_conf_get_module_srv_conf(cf, &*addr_of!(ngx_http_upstream_module))
+            as *mut ngx_http_upstream_srv_conf_t;
 
     ccf.original_init_upstream = if (*uscf).peer.init_upstream.is_some() {
         (*uscf).peer.init_upstream
