@@ -1,38 +1,57 @@
-use std::env;
 use std::fs;
 use std::io::Result;
+#[cfg(unix)]
+use std::os::unix::ffi::OsStrExt;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::process::Output;
 
-const NGX_DEFAULT_VERSION: &str = "1.24.0";
-const NGINX_BIN: &str = "sbin/nginx";
-const NGINX_CONFIG: &str = "conf/nginx.conf";
+use ngx::ffi::{NGX_CONF_PATH, NGX_PREFIX, NGX_SBIN_PATH};
+
+/// Convert a CStr to a PathBuf
+pub fn cstr_to_path(val: &std::ffi::CStr) -> Option<PathBuf> {
+    if val.is_empty() {
+        return None;
+    }
+
+    #[cfg(unix)]
+    let str = std::ffi::OsStr::from_bytes(val.to_bytes());
+    #[cfg(not(unix))]
+    let str = std::str::from_utf8(val.to_bytes()).ok()?;
+
+    Some(PathBuf::from(str))
+}
 
 /// harness to test nginx
 pub struct Nginx {
-    pub install_path: String,
+    pub install_path: PathBuf,
+    pub config_path: PathBuf,
 }
 
 impl Default for Nginx {
     /// create nginx with default
     fn default() -> Nginx {
-        let path = env::current_dir().unwrap();
-        let version = env::var("NGX_VERSION").unwrap_or(NGX_DEFAULT_VERSION.into());
-        let platform = target_triple::TARGET;
-        let ngx_path = format!(".cache/nginx/{}/{}", version, platform);
-        let install_path = format!("{}/{}", path.display(), ngx_path);
-        Nginx { install_path }
+        let install_path = cstr_to_path(NGX_PREFIX).expect("installation prefix");
+        Nginx::new(install_path)
     }
 }
 
 impl Nginx {
-    pub fn new(path: String) -> Nginx {
-        Nginx { install_path: path }
+    pub fn new<P: AsRef<Path>>(path: P) -> Nginx {
+        let install_path = path.as_ref();
+        let config_path = cstr_to_path(NGX_CONF_PATH).expect("configuration path");
+        let config_path = install_path.join(config_path);
+
+        Nginx {
+            install_path: install_path.into(),
+            config_path,
+        }
     }
 
     /// get bin path to nginx instance
-    pub fn bin_path(&mut self) -> String {
-        format!("{}/{}", self.install_path, NGINX_BIN)
+    pub fn bin_path(&mut self) -> PathBuf {
+        let bin_path = cstr_to_path(NGX_SBIN_PATH).expect("binary path");
+        self.install_path.join(bin_path)
     }
 
     /// start nginx process with arguments
@@ -70,10 +89,9 @@ impl Nginx {
     }
 
     // replace config with another config
-    pub fn replace_config(&mut self, from: &str) -> Result<u64> {
-        let config_path = format!("{}/{}", self.install_path, NGINX_CONFIG);
-        println!("copying config from: {} to: {}", from, config_path); // replace with logging
-        fs::copy(from, config_path)
+    pub fn replace_config<P: AsRef<Path>>(&mut self, from: P) -> Result<u64> {
+        println!("copying config from: {:?} to: {:?}", from.as_ref(), self.config_path); // replace with logging
+        fs::copy(from, &self.config_path)
     }
 }
 
@@ -99,7 +117,7 @@ mod tests {
         );
 
         nginx
-            .replace_config(&test_config_path.to_string_lossy())
+            .replace_config(&test_config_path)
             .expect(format!("Unable to load config file: {}", test_config_path.to_string_lossy()).as_str());
         let output = nginx.restart().expect("Unable to restart NGINX");
         assert!(output.status.success());
