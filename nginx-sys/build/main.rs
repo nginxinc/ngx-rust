@@ -46,6 +46,7 @@ fn generate_binding(nginx_build_dir: PathBuf) {
         // Bindings will not compile on Linux without block listing this item
         // It is worth investigating why this is
         .blocklist_item("IPPORT_RESERVED")
+        .generate_cstr(true)
         // The input header we would like to generate bindings for.
         .header("build/wrapper.h")
         .clang_args(clang_args)
