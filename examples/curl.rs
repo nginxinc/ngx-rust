@@ -6,7 +6,7 @@ use ngx::ffi::{
 };
 use ngx::http::MergeConfigError;
 use ngx::{core, core::Status, http, http::HTTPModule};
-use ngx::{http_request_handler, ngx_log_debug_http, ngx_modules, ngx_null_command, ngx_string};
+use ngx::{http_request_handler, ngx_log_debug_http, ngx_null_command, ngx_string};
 use std::os::raw::{c_char, c_void};
 use std::ptr::addr_of;
 
@@ -61,9 +61,13 @@ static ngx_http_curl_module_ctx: ngx_http_module_t = ngx_http_module_t {
     merge_loc_conf: Some(Module::merge_loc_conf),
 };
 
-ngx_modules!(ngx_http_curl_module);
+// Generate the `ngx_modules` table with exported modules.
+// This feature is required to build a 'cdylib' dynamic module outside of the NGINX buildsystem.
+#[cfg(feature = "export-modules")]
+ngx::ngx_modules!(ngx_http_curl_module);
 
 #[no_mangle]
+#[used]
 pub static mut ngx_http_curl_module: ngx_module_t = ngx_module_t {
     ctx_index: ngx_uint_t::max_value(),
     index: ngx_uint_t::max_value(),

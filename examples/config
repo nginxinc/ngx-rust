@@ -1,0 +1,94 @@
+ngx_addon_name=ngx_rust_examples
+ngx_cargo_profile=ngx-module
+
+if [ $HTTP = YES ]; then
+    ngx_module_type=HTTP
+
+    if :; then
+        ngx_module_name=ngx_http_async_module
+        ngx_module_lib=async
+
+        ngx_module_lib=$NGX_OBJS/$ngx_addon_name/$ngx_cargo_profile/examples/lib$ngx_module_lib.a
+        ngx_module_deps=$ngx_module_lib
+        ngx_module_libs="$ngx_module_lib -lm"
+
+        # Module deps are usually added to the object file targets, but we don't have any
+        LINK_DEPS="$LINK_DEPS $ngx_module_lib"
+
+        . auto/module
+    fi
+
+    if :; then
+        ngx_module_name=ngx_http_awssigv4_module
+        ngx_module_lib=awssig
+
+        ngx_module_lib=$NGX_OBJS/$ngx_addon_name/$ngx_cargo_profile/examples/lib$ngx_module_lib.a
+        ngx_module_deps=$ngx_module_lib
+        ngx_module_libs=$ngx_module_lib
+
+        # Module deps are usually added to the object file targets, but we don't have any
+        LINK_DEPS="$LINK_DEPS $ngx_module_lib"
+
+        . auto/module
+    fi
+
+    if :; then
+        ngx_module_name=ngx_http_curl_module
+        ngx_module_lib=curl
+
+        ngx_module_lib=$NGX_OBJS/$ngx_addon_name/$ngx_cargo_profile/examples/lib$ngx_module_lib.a
+        ngx_module_deps=$ngx_module_lib
+        ngx_module_libs=$ngx_module_lib
+
+        # Module deps are usually added to the object file targets, but we don't have any
+        LINK_DEPS="$LINK_DEPS $ngx_module_lib"
+
+        . auto/module
+    fi
+
+    case "$NGX_PLATFORM" in
+        Linux:*)
+            ngx_module_name=ngx_http_orig_dst_module
+            ngx_module_lib=httporigdst
+        
+            ngx_module_lib=$NGX_OBJS/$ngx_addon_name/$ngx_cargo_profile/examples/lib$ngx_module_lib.a
+            ngx_module_deps=$ngx_module_lib
+            ngx_module_libs=$ngx_module_lib
+        
+            # Module deps are usually added to the object file targets, but we don't have any
+            LINK_DEPS="$LINK_DEPS $ngx_module_lib"
+        
+            . auto/module
+            ;;
+    esac
+
+    if :; then
+        ngx_module_name=ngx_http_upstream_custom_module
+        ngx_module_lib=upstream
+
+        ngx_module_lib=$NGX_OBJS/$ngx_addon_name/$ngx_cargo_profile/examples/lib$ngx_module_lib.a
+        ngx_module_deps=$ngx_module_lib
+        ngx_module_libs=$ngx_module_lib
+
+        # Module deps are usually added to the object file targets, but we don't have any
+        LINK_DEPS="$LINK_DEPS $ngx_module_lib"
+
+        . auto/module
+    fi
+fi
+
+# Write a cargo config with the $ngx_cargo_profile definition (optional)
+
+if [ "$NGX_DEBUG" = YES ]; then
+    NGX_CARGO_PROFILE_BASE=dev
+else
+    NGX_CARGO_PROFILE_BASE=release
+fi
+
+mkdir -p "$NGX_OBJS/.cargo"
+cat > "$NGX_OBJS/.cargo/config.toml" << END
+
+[profile.$ngx_cargo_profile]
+inherits = "$NGX_CARGO_PROFILE_BASE"
+
+END

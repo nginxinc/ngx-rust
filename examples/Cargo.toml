@@ -42,4 +42,11 @@ crate-type = ["cdylib"]
 tokio = { version = "1.33.0", features = ["full"] }
 
 [features]
+default = ["export-modules"]
+# Generate `ngx_modules` table with module exports
+# The exports table is required for building loadable modules with --crate-type cdylib
+# outside of the NGINX buildsystem. However, cargo currently does not detect
+# this configuration automatically.
+# See https://github.com/rust-lang/rust/issues/20267
+export-modules = []
 linux = []
