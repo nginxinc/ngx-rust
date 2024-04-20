@@ -1,28 +1,13 @@
+use std::ffi::CStr;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::read_dir;
 use std::io::Result;
+use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::process::Output;
-
-const NGINX_PREFIX: &str = nginx_sys::metadata::NGINX_INSTALL_DIR;
-
-const NGINX_SBIN_SUFFIX: &str = "sbin/nginx";
-const NGINX_MODULES_SUFFIX: &str = "modules";
-const NGINX_CONF_SUFFIX: &str = "conf/nginx.conf";
-const NGINX_CONF_PREFIX_SUFFIX: &str = "conf";
-const NGINX_ERROR_LOG_SUFFIX: &str = "logs/error.log";
-const NGINX_PID_SUFFIX: &str = "logs/nginx.pid";
-const NGINX_LOCK_SUFFIX: &str = "logs/nginx.lock";
-
-const NGINX_HTTP_LOG_SUFFIX: &str = "logs/access.log";
-const NGINX_HTTP_CLIENT_BODY_SUFFIX: &str = "client_body_temp";
-const NGINX_HTTP_PROXY_TEMP_SUFFIX: &str = "proxy_temp";
-const NGINX_HTTP_FASTCGI_TEMP_SUFFIX: &str = "fastcgi_temp";
-const NGINX_HTTP_UWSGI_TEMP_SUFFIX: &str = "uwsgi_temp";
-const NGINX_HTTP_SCGI_TEMP_SUFFIX: &str = "scgi_temp";
 
 /// harness to test nginx
 #[allow(dead_code)]
@@ -31,7 +16,7 @@ pub struct Nginx {
     // most of them are not used, but keep them for future uses
     prefix: PathBuf,
     sbin_path: PathBuf,
-    modules_path: PathBuf,
+    modules_path: PathBuf, // and only this path is not embedded in bindings.rs, since the module root is same to the prefix
     conf_path: PathBuf,
     conf_prefix: PathBuf,
     error_log_path: PathBuf,
@@ -47,31 +32,34 @@ pub struct Nginx {
 
 impl Default for Nginx {
     fn default() -> Nginx {
-        Self::new_with_prefix(NGINX_PREFIX.into())
+        // we load consts in bindings.rs here, since join() and from_bytes() is not const fn for now
+        fn from_bytes_with_nul(slice: &[u8]) -> &OsStr {
+            OsStr::from_bytes(CStr::from_bytes_with_nul(slice).unwrap().to_bytes())
+        }
+        let prefix: PathBuf = from_bytes_with_nul(nginx_sys::NGX_PREFIX).into();
+        fn concat_slice(prefix: &PathBuf, slice: &[u8]) -> PathBuf {
+            prefix.join(from_bytes_with_nul(slice))
+        }
+        Nginx {
+            sbin_path: concat_slice(&prefix, nginx_sys::NGX_SBIN_PATH),
+            modules_path: prefix.join("modules"),
+            conf_path: concat_slice(&prefix, nginx_sys::NGX_CONF_PATH),
+            conf_prefix: concat_slice(&prefix, nginx_sys::NGX_CONF_PREFIX),
+            error_log_path: concat_slice(&prefix, nginx_sys::NGX_ERROR_LOG_PATH),
+            pid_path: concat_slice(&prefix, nginx_sys::NGX_PID_PATH),
+            lock_path: concat_slice(&prefix, nginx_sys::NGX_LOCK_PATH),
+            http_log_path: concat_slice(&prefix, nginx_sys::NGX_HTTP_LOG_PATH),
+            http_client_body_temp_path: concat_slice(&prefix, nginx_sys::NGX_HTTP_CLIENT_TEMP_PATH),
+            http_proxy_temp_path: concat_slice(&prefix, nginx_sys::NGX_HTTP_PROXY_TEMP_PATH),
+            http_fastcgi_temp_path: concat_slice(&prefix, nginx_sys::NGX_HTTP_FASTCGI_TEMP_PATH),
+            http_uwsgi_temp_path: concat_slice(&prefix, nginx_sys::NGX_HTTP_UWSGI_TEMP_PATH),
+            http_scgi_temp_path: concat_slice(&prefix, nginx_sys::NGX_HTTP_SCGI_TEMP_PATH),
+            prefix,
+        }
     }
 }
 
 impl Nginx {
-    /// create nginx with prefix only
-    pub fn new_with_prefix(prefix: PathBuf) -> Nginx {
-        Nginx {
-            sbin_path: prefix.join(NGINX_SBIN_SUFFIX),
-            modules_path: prefix.join(NGINX_MODULES_SUFFIX),
-            conf_path: prefix.join(NGINX_CONF_SUFFIX),
-            conf_prefix: prefix.join(NGINX_CONF_PREFIX_SUFFIX),
-            error_log_path: prefix.join(NGINX_ERROR_LOG_SUFFIX),
-            pid_path: prefix.join(NGINX_PID_SUFFIX),
-            lock_path: prefix.join(NGINX_LOCK_SUFFIX),
-            http_log_path: prefix.join(NGINX_HTTP_LOG_SUFFIX),
-            http_client_body_temp_path: prefix.join(NGINX_HTTP_CLIENT_BODY_SUFFIX),
-            http_proxy_temp_path: prefix.join(NGINX_HTTP_PROXY_TEMP_SUFFIX),
-            http_fastcgi_temp_path: prefix.join(NGINX_HTTP_FASTCGI_TEMP_SUFFIX),
-            http_uwsgi_temp_path: prefix.join(NGINX_HTTP_UWSGI_TEMP_SUFFIX),
-            http_scgi_temp_path: prefix.join(NGINX_HTTP_SCGI_TEMP_SUFFIX),
-            prefix,
-        }
-    }
-
     /// execute nginx process with arguments
     pub fn cmd(&mut self, args: &[&str]) -> Result<Output> {
         let result = Command::new(&self.sbin_path).args(args).output();
@@ -112,8 +100,8 @@ impl Nginx {
             .join(conf_path_from.file_name().unwrap_or(OsStr::new("unknown_conf")));
         println!(
             "copying config from: {} to: {}",
-            conf_path_to.display(),
-            conf_path_from.display()
+            conf_path_from.display(),
+            conf_path_to.display()
         ); // replace with logging
         fs::copy(conf_path_from, conf_path_to)
     }
@@ -127,7 +115,7 @@ impl Nginx {
         ); // replace with logging
         fs::write(conf_path_to, conf_content)
     }
-    /// ensure the existance module dir
+    /// ensure the existance of module dir
     fn ensure_module_dir(&mut self) -> Result<()> {
         fs::create_dir_all(&self.modules_path)
     }
@@ -139,8 +127,8 @@ impl Nginx {
             .join(module_path_from.file_name().unwrap_or(OsStr::new("unknown_module")));
         println!(
             "copying module from: {} to: {}",
-            module_path_to.display(),
-            module_path_from.display()
+            module_path_from.display(),
+            module_path_to.display()
         ); // replace with logging
         fs::copy(module_path_from, module_path_to)
     }
