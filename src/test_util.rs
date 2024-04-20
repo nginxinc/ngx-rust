@@ -37,7 +37,7 @@ impl Default for Nginx {
             OsStr::from_bytes(CStr::from_bytes_with_nul(slice).unwrap().to_bytes())
         }
         let prefix: PathBuf = from_bytes_with_nul(nginx_sys::NGX_PREFIX).into();
-        fn concat_slice(prefix: &PathBuf, slice: &[u8]) -> PathBuf {
+        fn concat_slice(prefix: &Path, slice: &[u8]) -> PathBuf {
             prefix.join(from_bytes_with_nul(slice))
         }
         Nginx {
