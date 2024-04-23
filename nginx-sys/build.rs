@@ -134,14 +134,14 @@ fn main() -> Result<(), Box<dyn StdError>> {
     }
     println!("Verified GPG permissions");
     // Configure and Compile NGINX
-    let (_nginx_install_dir, nginx_src_dir) = compile_nginx(&cache_dir)?;
+    let (_, nginx_src_dir) = compile_nginx(&cache_dir)?;
     // Hint cargo to rebuild if any of the these environment variables values change
     // because they will trigger a recompilation of NGINX with different parameters
     for var in ENV_VARS_TRIGGERING_RECOMPILE {
-        println!("cargo:rerun-if-env-changed={var}");
+        println!("cargo::rerun-if-env-changed={var}");
     }
-    println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=wrapper.h");
+    println!("cargo::rerun-if-changed=build.rs");
+    println!("cargo::rerun-if-changed=wrapper.h");
     // Read autoconf generated makefile for NGINX and generate Rust bindings based on its includes
     generate_binding(nginx_src_dir);
     Ok(())
