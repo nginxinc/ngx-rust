@@ -95,10 +95,8 @@ const NGX_BASE_MODULES: [&str; 20] = [
     "--with-threads",
 ];
 /// Additional configuration flags to use when building on Linux.
-const NGX_LINUX_ADDITIONAL_OPTS: [&str; 3] = [
+const NGX_LINUX_ADDITIONAL_OPTS: [&str; 1] = [
     "--with-file-aio",
-    "--with-cc-opt=-g -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC",
-    "--with-ld-opt=-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie",
 ];
 const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 12] = [
     "DEBUG",
