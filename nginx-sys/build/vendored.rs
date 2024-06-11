@@ -46,7 +46,7 @@ C1F33DD8CE1D4CC613AF14DA9195C48241FBF7DD",
 );
 const OPENSSL_DOWNLOAD_URL_PREFIX: &str = "https://github.com/openssl/openssl/releases/download";
 /// The default version of NGINX to use if the `NGX_VERSION` environment variable is not present
-const NGX_DEFAULT_VERSION: &str = "1.24.0";
+const NGX_DEFAULT_VERSION: &str = "1.26.1";
 
 /// Key 1: Konstantin Pavlov's public key. For Nginx 1.25.3 and earlier
 /// Key 2: Sergey Kandaurov's public key. For Nginx 1.25.4
