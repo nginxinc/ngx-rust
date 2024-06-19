@@ -1,4 +1,4 @@
-ARG NGX_VERSION=1.24.0
+ARG NGX_VERSION=1.26.1
 ARG NGX_DEBUG=false
 
 # --- builder: build all examples

@@ -7,11 +7,11 @@
 //! NGINX modules can be built against a particular version of NGINX. The following environment variables can be used
 //! to specify a particular version of NGINX or an NGINX dependency:
 //!
-//! * `ZLIB_VERSION` (default 1.2.13) -
-//! * `PCRE2_VERSION` (default 10.42)
-//! * `OPENSSL_VERSION` (default 3.0.7)
-//! * `NGX_VERSION` (default 1.23.3) - NGINX OSS version
-//! * `NGX_DEBUG` (default to false)-  if set to true, then will compile NGINX `--with-debug` option
+//! * `ZLIB_VERSION` (default 1.3.1) - zlib version
+//! * `PCRE2_VERSION` (default 10.42 for NGINX 1.22.0 and later, or 8.45 for earlier) - PCRE1 or PCRE2 version
+//! * `OPENSSL_VERSION` (default 3.2.1 for NGINX 1.22.0 and later, or 1.1.1w for earlier) - OpenSSL version
+//! * `NGX_VERSION` (default 1.26.1) - NGINX OSS version
+//! * `NGX_DEBUG` (default to false) -  if set to true, then will compile NGINX `--with-debug` option
 //!
 //! For example, this is how you would compile the [examples](https://github.com/nginxinc/ngx-rust/tree/master/examples) using a specific version of NGINX and enabling
 //! debugging: `NGX_DEBUG=true NGX_VERSION=1.23.0 cargo build --package=examples --examples --release`
