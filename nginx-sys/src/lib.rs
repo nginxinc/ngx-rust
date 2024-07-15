@@ -75,19 +75,50 @@ pub unsafe fn str_to_uchar(pool: *mut ngx_pool_t, data: &str) -> *mut u_char {
 }
 
 impl ngx_str_t {
+    /// Returns the contents of this `ngx_str_t` as a byte slice.
+    ///
+    /// The returned slice will **not** contain the optional nul terminator that `ngx_str_t.data`
+    /// may have.
+    #[inline]
+    pub fn as_bytes(&self) -> &[u8] {
+        if self.is_empty() {
+            &[]
+        } else {
+            // SAFETY: `ngx_str_t` with non-zero len must contain a valid correctly aligned pointer
+            unsafe { slice::from_raw_parts(self.data, self.len) }
+        }
+    }
+
+    /// Returns the contents of this `ngx_str_t` as a mutable byte slice.
+    #[inline]
+    pub fn as_bytes_mut(&mut self) -> &mut [u8] {
+        if self.is_empty() {
+            &mut []
+        } else {
+            // SAFETY: `ngx_str_t` with non-zero len must contain a valid correctly aligned pointer
+            unsafe { slice::from_raw_parts_mut(self.data, self.len) }
+        }
+    }
+
+    /// Returns `true` if the string has a length of 0.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
     /// Convert the nginx string to a string slice (`&str`).
     ///
     /// # Safety
     /// This function is marked as unsafe because it involves raw pointer manipulation.
     /// It assumes that the underlying `data` pointer is valid and points to a valid UTF-8 encoded string.
     ///
+    /// # Panics
+    /// This function panics if the `ngx_str_t` is not valid UTF-8.
+    ///
     /// # Returns
     /// A string slice (`&str`) representing the nginx string.
     pub fn to_str(&self) -> &str {
-        unsafe {
-            let slice = slice::from_raw_parts(self.data, self.len);
-            return std::str::from_utf8(slice).unwrap();
-        }
+        std::str::from_utf8(self.as_bytes()).unwrap()
     }
 
     /// Create an `ngx_str_t` instance from a `String`.
