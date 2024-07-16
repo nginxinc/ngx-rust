@@ -49,6 +49,20 @@ mod bindings {
 #[doc(no_inline)]
 pub use bindings::*;
 
+/// Convert a byte slice to a raw pointer (`*mut u_char`) allocated in the given nginx memory pool.
+///
+/// # Safety
+///
+/// The caller must provide a valid pointer to the memory pool.
+pub unsafe fn bytes_to_uchar(pool: *mut ngx_pool_t, data: &[u8]) -> Option<*mut u_char> {
+    let ptr: *mut u_char = ngx_pnalloc(pool, data.len()) as _;
+    if ptr.is_null() {
+        return None;
+    }
+    copy_nonoverlapping(data.as_ptr(), ptr, data.len());
+    Some(ptr)
+}
+
 /// Convert a string slice (`&str`) to a raw pointer (`*mut u_char`) allocated in the given nginx memory pool.
 ///
 /// # Arguments
@@ -70,6 +84,7 @@ pub use bindings::*;
 /// ```
 pub unsafe fn str_to_uchar(pool: *mut ngx_pool_t, data: &str) -> *mut u_char {
     let ptr: *mut u_char = ngx_pnalloc(pool, data.len()) as _;
+    debug_assert!(!ptr.is_null());
     copy_nonoverlapping(data.as_ptr(), ptr, data.len());
     ptr
 }
@@ -119,6 +134,15 @@ impl ngx_str_t {
     /// A string slice (`&str`) representing the nginx string.
     pub fn to_str(&self) -> &str {
         std::str::from_utf8(self.as_bytes()).unwrap()
+    }
+
+    /// Create an `ngx_str_t` instance from a byte slice.
+    ///
+    /// # Safety
+    ///
+    /// The caller must provide a valid pointer to a memory pool.
+    pub unsafe fn from_bytes(pool: *mut ngx_pool_t, src: &[u8]) -> Option<Self> {
+        bytes_to_uchar(pool, src).map(|data| Self { data, len: src.len() })
     }
 
     /// Create an `ngx_str_t` instance from a `String`.
