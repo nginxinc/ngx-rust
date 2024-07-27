@@ -38,64 +38,13 @@ macro_rules! ngx_log_debug_http {
     }
 }
 
-/// Debug masks for use with ngx_log_debug_mask, these represent the only accepted values for the
-/// mask.
-#[derive(Debug)]
-pub enum DebugMask {
-    /// Aligns to the NGX_LOG_DEBUG_CORE mask.
-    Core,
-    /// Aligns to the NGX_LOG_DEBUG_ALLOC mask.
-    Alloc,
-    /// Aligns to the NGX_LOG_DEBUG_MUTEX mask.
-    Mutex,
-    /// Aligns to the NGX_LOG_DEBUG_EVENT mask.
-    Event,
-    /// Aligns to the NGX_LOG_DEBUG_HTTP mask.
-    Http,
-    /// Aligns to the NGX_LOG_DEBUG_MAIL mask.
-    Mail,
-    /// Aligns to the NGX_LOG_DEBUG_STREAM mask.
-    Stream,
-}
-
-impl TryFrom<u32> for DebugMask {
-    type Error = u32;
-
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
-        match value {
-            crate::ffi::NGX_LOG_DEBUG_CORE => Ok(DebugMask::Core),
-            crate::ffi::NGX_LOG_DEBUG_ALLOC => Ok(DebugMask::Alloc),
-            crate::ffi::NGX_LOG_DEBUG_MUTEX => Ok(DebugMask::Mutex),
-            crate::ffi::NGX_LOG_DEBUG_EVENT => Ok(DebugMask::Event),
-            crate::ffi::NGX_LOG_DEBUG_HTTP => Ok(DebugMask::Http),
-            crate::ffi::NGX_LOG_DEBUG_MAIL => Ok(DebugMask::Mail),
-            crate::ffi::NGX_LOG_DEBUG_STREAM => Ok(DebugMask::Stream),
-            _ => Err(0),
-        }
-    }
-}
-
-impl From<DebugMask> for u32 {
-    fn from(value: DebugMask) -> Self {
-        match value {
-            DebugMask::Core => crate::ffi::NGX_LOG_DEBUG_CORE,
-            DebugMask::Alloc => crate::ffi::NGX_LOG_DEBUG_ALLOC,
-            DebugMask::Mutex => crate::ffi::NGX_LOG_DEBUG_MUTEX,
-            DebugMask::Event => crate::ffi::NGX_LOG_DEBUG_EVENT,
-            DebugMask::Http => crate::ffi::NGX_LOG_DEBUG_HTTP,
-            DebugMask::Mail => crate::ffi::NGX_LOG_DEBUG_MAIL,
-            DebugMask::Stream => crate::ffi::NGX_LOG_DEBUG_STREAM,
-        }
-    }
-}
-
 /// Log with requested debug mask.
 ///
-/// **NOTE:** This macro supports `DebugMask::Http` (`NGX_LOG_DEBUG_HTTP`), however, if you have
-/// access to a Request object via an http handler it can be more convenient and readable to use the
-/// `ngx_log_debug_http` macro instead.
+/// **NOTE:** This macro supports [`DebugMask::Http`] (`NGX_LOG_DEBUG_HTTP`), however, if you have
+/// access to a Request object via an http handler it can be more convenient and readable to use
+/// the [`ngx_log_debug_http`] macro instead.
 ///
-/// See https://nginx.org/en/docs/dev/development_guide.html#logging for details and available
+/// See <https://nginx.org/en/docs/dev/development_guide.html#logging> for details and available
 /// masks.
 #[macro_export]
 macro_rules! ngx_log_debug_mask {
@@ -176,6 +125,57 @@ macro_rules! ngx_log_debug_mask {
             }
         }
     });
+}
+
+/// Debug masks for use with [`ngx_log_debug_mask`], these represent the only accepted values for
+/// the mask.
+#[derive(Debug)]
+pub enum DebugMask {
+    /// Aligns to the NGX_LOG_DEBUG_CORE mask.
+    Core,
+    /// Aligns to the NGX_LOG_DEBUG_ALLOC mask.
+    Alloc,
+    /// Aligns to the NGX_LOG_DEBUG_MUTEX mask.
+    Mutex,
+    /// Aligns to the NGX_LOG_DEBUG_EVENT mask.
+    Event,
+    /// Aligns to the NGX_LOG_DEBUG_HTTP mask.
+    Http,
+    /// Aligns to the NGX_LOG_DEBUG_MAIL mask.
+    Mail,
+    /// Aligns to the NGX_LOG_DEBUG_STREAM mask.
+    Stream,
+}
+
+impl TryFrom<u32> for DebugMask {
+    type Error = u32;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            crate::ffi::NGX_LOG_DEBUG_CORE => Ok(DebugMask::Core),
+            crate::ffi::NGX_LOG_DEBUG_ALLOC => Ok(DebugMask::Alloc),
+            crate::ffi::NGX_LOG_DEBUG_MUTEX => Ok(DebugMask::Mutex),
+            crate::ffi::NGX_LOG_DEBUG_EVENT => Ok(DebugMask::Event),
+            crate::ffi::NGX_LOG_DEBUG_HTTP => Ok(DebugMask::Http),
+            crate::ffi::NGX_LOG_DEBUG_MAIL => Ok(DebugMask::Mail),
+            crate::ffi::NGX_LOG_DEBUG_STREAM => Ok(DebugMask::Stream),
+            _ => Err(0),
+        }
+    }
+}
+
+impl From<DebugMask> for u32 {
+    fn from(value: DebugMask) -> Self {
+        match value {
+            DebugMask::Core => crate::ffi::NGX_LOG_DEBUG_CORE,
+            DebugMask::Alloc => crate::ffi::NGX_LOG_DEBUG_ALLOC,
+            DebugMask::Mutex => crate::ffi::NGX_LOG_DEBUG_MUTEX,
+            DebugMask::Event => crate::ffi::NGX_LOG_DEBUG_EVENT,
+            DebugMask::Http => crate::ffi::NGX_LOG_DEBUG_HTTP,
+            DebugMask::Mail => crate::ffi::NGX_LOG_DEBUG_MAIL,
+            DebugMask::Stream => crate::ffi::NGX_LOG_DEBUG_STREAM,
+        }
+    }
 }
 
 #[cfg(test)]

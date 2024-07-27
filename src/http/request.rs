@@ -88,7 +88,9 @@ macro_rules! http_variable_get {
     };
 }
 
-/// Wrapper struct for an `ngx_http_request_t` pointer, , providing methods for working with HTTP requests.
+/// Wrapper struct for an [`ngx_http_request_t`] pointer, providing methods for working with HTTP requests.
+///
+/// See <https://nginx.org/en/docs/dev/development_guide.html#http_request>
 #[repr(transparent)]
 pub struct Request(ngx_http_request_t);
 
@@ -106,8 +108,6 @@ impl<'a> From<&'a mut Request> for *mut ngx_http_request_t {
 
 impl Request {
     /// Create a [`Request`] from an [`ngx_http_request_t`].
-    ///
-    /// [`ngx_http_request_t`]: https://nginx.org/en/docs/dev/development_guide.html#http_request
     ///
     /// # Safety
     ///
@@ -134,9 +134,8 @@ impl Request {
     /// The option wraps an ngx_http_upstream_t instance, it will be none when the underlying NGINX request
     /// does not have a pointer to a [`ngx_http_upstream_t`] upstream structure.
     ///
-    /// [`ngx_http_upstream_t`]: is best described in
-    /// https://nginx.org/en/docs/dev/development_guide.html#http_request
-    /// https://nginx.org/en/docs/dev/development_guide.html#http_load_balancing
+    /// [`ngx_http_upstream_t`] is best described in
+    /// <https://nginx.org/en/docs/dev/development_guide.html#http_load_balancing>
     pub fn upstream(&self) -> Option<*mut ngx_http_upstream_t> {
         if self.0.upstream.is_null() {
             return None;
@@ -218,7 +217,7 @@ impl Request {
 
     /// Sets the value as the module's context.
     ///
-    /// See https://nginx.org/en/docs/dev/development_guide.html#http_request
+    /// See <https://nginx.org/en/docs/dev/development_guide.html#http_request>
     pub fn set_module_ctx(&self, value: *mut c_void, module: &ngx_module_t) {
         unsafe {
             *self.0.ctx.add(module.ctx_index) = value;
@@ -267,7 +266,7 @@ impl Request {
 
     /// Add header to the `headers_in` object.
     ///
-    /// See https://nginx.org/en/docs/dev/development_guide.html#http_request
+    /// See <https://nginx.org/en/docs/dev/development_guide.html#http_request>
     pub fn add_header_in(&mut self, key: &str, value: &str) -> Option<()> {
         let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_in.headers) as _ };
         unsafe { add_to_ngx_table(table, self.0.pool, key, value) }
@@ -275,7 +274,7 @@ impl Request {
 
     /// Add header to the `headers_out` object.
     ///
-    /// See https://nginx.org/en/docs/dev/development_guide.html#http_request
+    /// See <https://nginx.org/en/docs/dev/development_guide.html#http_request>
     pub fn add_header_out(&mut self, key: &str, value: &str) -> Option<()> {
         let table: *mut ngx_table_elt_t = unsafe { ngx_list_push(&mut self.0.headers_out.headers) as _ };
         unsafe { add_to_ngx_table(table, self.0.pool, key, value) }
@@ -425,7 +424,7 @@ impl fmt::Debug for Request {
     }
 }
 
-/// Iterator for `ngx_list_t` types.
+/// Iterator for [`ngx_list_t`] types.
 ///
 /// Implementes the std::iter::Iterator trait.
 pub struct NgxListIterator {
@@ -435,10 +434,11 @@ pub struct NgxListIterator {
     i: ngx_uint_t,
 }
 
-// create new http request iterator
+/// Creates new HTTP header iterator
+///
 /// # Safety
 ///
-/// The caller has provided a valid `ngx_str_t` which can be dereferenced validly.
+/// The caller has provided a valid [`ngx_str_t`] which can be dereferenced validly.
 pub unsafe fn list_iterator(list: *const ngx_list_t) -> NgxListIterator {
     let part: *const ngx_list_part_t = &(*list).part;
 
