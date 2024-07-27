@@ -118,7 +118,7 @@ mod tests {
 
         nginx
             .replace_config(&test_config_path)
-            .expect(format!("Unable to load config file: {}", test_config_path.to_string_lossy()).as_str());
+            .unwrap_or_else(|_| panic!("Unable to load config file: {}", test_config_path.to_string_lossy()));
         let output = nginx.restart().expect("Unable to restart NGINX");
         assert!(output.status.success());
 

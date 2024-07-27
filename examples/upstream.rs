@@ -113,8 +113,8 @@ ngx::ngx_modules!(ngx_http_upstream_custom_module);
 #[no_mangle]
 #[used]
 pub static mut ngx_http_upstream_custom_module: ngx_module_t = ngx_module_t {
-    ctx_index: ngx_uint_t::max_value(),
-    index: ngx_uint_t::max_value(),
+    ctx_index: ngx_uint_t::MAX,
+    index: ngx_uint_t::MAX,
     name: std::ptr::null_mut(),
     spare0: 0,
     spare1: 0,
