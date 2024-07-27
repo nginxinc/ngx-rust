@@ -95,9 +95,7 @@ const NGX_BASE_MODULES: [&str; 20] = [
     "--with-threads",
 ];
 /// Additional configuration flags to use when building on Linux.
-const NGX_LINUX_ADDITIONAL_OPTS: [&str; 1] = [
-    "--with-file-aio",
-];
+const NGX_LINUX_ADDITIONAL_OPTS: [&str; 1] = ["--with-file-aio"];
 const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 12] = [
     "DEBUG",
     "ZLIB_VERSION",
@@ -485,7 +483,7 @@ fn extract_archive(
             .for_each(|mut entry| {
                 let path = entry.path().unwrap();
                 let stripped_path = path.components().skip(1).collect::<PathBuf>();
-                entry.unpack(&archive_output_dir.join(stripped_path)).unwrap();
+                entry.unpack(archive_output_dir.join(stripped_path)).unwrap();
             });
     } else {
         println!(
