@@ -45,7 +45,7 @@ impl Merge for () {
 /// These functions allocate structures, initialize them, and merge through the configuration
 /// layers.
 ///
-/// See https://nginx.org/en/docs/dev/development_guide.html#adding_new_modules for details.
+/// See <https://nginx.org/en/docs/dev/development_guide.html#adding_new_modules> for details.
 pub trait HTTPModule {
     /// Configuration in the `http` block.
     type MainConf: Merge + Default;

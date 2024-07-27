@@ -3,6 +3,8 @@ use std::slice;
 use crate::ffi::*;
 
 /// The `Buffer` trait provides methods for working with an nginx buffer (`ngx_buf_t`).
+///
+/// See <https://nginx.org/en/docs/dev/development_guide.html#buffer>
 pub trait Buffer {
     /// Returns a raw pointer to the underlying `ngx_buf_t` of the buffer.
     fn as_ngx_buf(&self) -> *const ngx_buf_t;
