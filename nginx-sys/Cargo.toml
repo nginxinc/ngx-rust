@@ -16,7 +16,7 @@ crate-type = ["staticlib", "rlib"]
 [dependencies]
 
 [build-dependencies]
-bindgen = "0.69.4"
+bindgen = "0.70.1"
 duct = { version = "0.13.7", optional = true }
 flate2 = { version = "1.0.28", optional = true }
 tar =  { version = "0.4.40", optional = true }
