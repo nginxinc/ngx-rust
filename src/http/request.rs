@@ -151,7 +151,7 @@ impl Request {
     }
 
     /// Module location configuration.
-    pub fn get_module_loc_conf<T>(&self, module: &ngx_module_t) -> Option<&T> {
+    pub fn get_module_loc_conf<T>(&self, module: &ngx_module_t) -> Option<&'static T> {
         let lc_prt = self.get_module_loc_conf_ptr(module) as *mut T;
         if lc_prt.is_null() {
             return None;
