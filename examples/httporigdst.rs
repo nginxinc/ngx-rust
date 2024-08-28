@@ -28,12 +28,12 @@ impl Default for NgxHttpOrigDstCtx {
 
 impl NgxHttpOrigDstCtx {
     pub fn save(&mut self, addr: &str, port: in_port_t, pool: &mut core::Pool) -> core::Status {
-        let addr_data = pool.alloc(IPV4_STRLEN);
+        let addr_data = pool.alloc(addr.len());
         if addr_data.is_null() {
             return core::Status::NGX_ERROR;
         }
-        unsafe { libc::memcpy(addr_data, addr.as_ptr() as *const c_void, IPV4_STRLEN) };
-        self.orig_dst_addr.len = IPV4_STRLEN;
+        unsafe { libc::memcpy(addr_data, addr.as_ptr() as *const c_void, addr.len()) };
+        self.orig_dst_addr.len = addr.len();
         self.orig_dst_addr.data = addr_data as *mut u8;
 
         let port_str = port.to_string();
@@ -204,6 +204,7 @@ unsafe fn ngx_get_origdst(request: &mut http::Request) -> Result<(String, in_por
         ngx_log_debug_http!(request, "httporigdst: ngx_sock_ntop failed to convert sockaddr");
         return Err(core::Status::NGX_ERROR);
     }
+    ip.truncate(e);
 
     let port = unsafe { ngx_inet_get_port(std::ptr::addr_of_mut!(addr) as *mut sockaddr) };
 
