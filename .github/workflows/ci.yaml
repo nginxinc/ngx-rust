@@ -79,11 +79,7 @@ jobs:
       - name: install command line dependencies
         run: brew install make gnupg
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
       - name: set up cargo cache
         uses: actions/cache@v4
         continue-on-error: false
@@ -113,26 +109,17 @@ jobs:
       - name: disable ipv6 for gpg
         run: echo "disable-ipv6" > .cache/.gnupg/dirmngr.conf
       - name: build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --verbose
+        run: cargo build --verbose
       - name: run tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --verbose
+        run: cargo test --verbose
 
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
           components: rustfmt
       - name: rustfmt version
         run: rustfmt --version
@@ -168,11 +155,8 @@ jobs:
             .cache/*.tar.sig
           key:  ${{ runner.os }}-deps-${{ hashFiles('**/nginx-sys/build.rs') }}
           restore-keys: ${{ runner.os }}-deps-
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
           components: rustfmt, clippy
       - name: run clippy
         run: cargo clippy -- -D warnings
