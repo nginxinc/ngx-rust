@@ -1,0 +1,27 @@
+[bans]
+multiple-versions = "warn"
+
+[graph]
+all-features = true
+
+[licenses]
+allow = [
+    "Apache-2.0 WITH LLVM-exception",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "ISC",
+    "MIT",
+    "OpenSSL",
+    "Unicode-DFS-2016",
+]
+confidence-threshold = 0.8
+exceptions = [
+    { allow = ["MPL-2.0"], crate = "webpki-roots" },
+]
+
+[[licenses.clarify]]
+crate = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [
+    { path = "LICENSE", hash = 0xbd0eed23 }
+]
