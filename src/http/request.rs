@@ -145,19 +145,49 @@ impl Request {
         unsafe { (*self.connection()).log }
     }
 
-    /// Module location configuration.
-    fn get_module_loc_conf_ptr(&self, module: &ngx_module_t) -> *mut c_void {
-        unsafe { *self.0.loc_conf.add(module.ctx_index) }
+    /// Global configuration for a module.
+    ///
+    /// Applies to the entire `http` block.
+    ///
+    /// # Safety
+    /// Caller must ensure that type `T` matches the configuration type for the specified module.
+    pub fn get_module_main_conf<T>(&self, module: &ngx_module_t) -> Option<&'static T> {
+        // SAFETY: main conf is either NULL or allocated with ngx_p(c)alloc and
+        // explicitly initialized by the module
+        unsafe {
+            let scf = *self.0.main_conf.add(module.ctx_index);
+            scf.cast::<T>().as_ref()
+        }
     }
 
-    /// Module location configuration.
-    pub fn get_module_loc_conf<T>(&self, module: &ngx_module_t) -> Option<&'static T> {
-        let lc_prt = self.get_module_loc_conf_ptr(module) as *mut T;
-        if lc_prt.is_null() {
-            return None;
+    /// Server-specific configuration for a module.
+    ///
+    /// Applies to a single `server` block.
+    ///
+    /// # Safety
+    /// Caller must ensure that type `T` matches the configuration type for the specified module.
+    pub fn get_module_srv_conf<T>(&self, module: &ngx_module_t) -> Option<&'static T> {
+        // SAFETY: server conf is either NULL or allocated with ngx_p(c)alloc and
+        // explicitly initialized by the module
+        unsafe {
+            let scf = *self.0.srv_conf.add(module.ctx_index);
+            scf.cast::<T>().as_ref()
         }
-        let lc = unsafe { &*lc_prt };
-        Some(lc)
+    }
+
+    /// Location-specific configuration for a module.
+    ///
+    /// Applies to a signle `location`, `if` or `limit_except` block.
+    ///
+    /// # Safety
+    /// Caller must ensure that type `T` matches the configuration type for the specified module.
+    pub fn get_module_loc_conf<T>(&self, module: &ngx_module_t) -> Option<&'static T> {
+        // SAFETY: location conf is either NULL or allocated with ngx_p(c)alloc and
+        // explicitly initialized by the module
+        unsafe {
+            let lcf = *self.0.loc_conf.add(module.ctx_index);
+            lcf.cast::<T>().as_ref()
+        }
     }
 
     /// Get Module context pointer
@@ -167,13 +197,10 @@ impl Request {
 
     /// Get Module context
     pub fn get_module_ctx<T>(&self, module: &ngx_module_t) -> Option<&T> {
-        let cf = self.get_module_ctx_ptr(module) as *mut T;
-
-        if cf.is_null() {
-            return None;
-        }
-        let co = unsafe { &*cf };
-        Some(co)
+        let ctx = self.get_module_ctx_ptr(module).cast::<T>();
+        // SAFETY: ctx is either NULL or allocated with ngx_p(c)alloc and
+        // explicitly initialized by the module
+        unsafe { ctx.as_ref() }
     }
 
     /// Sets the value as the module's context.
