@@ -106,6 +106,32 @@ impl<'a> From<&'a mut Request> for *mut ngx_http_request_t {
     }
 }
 
+impl crate::log::LogTarget for ngx_http_request_t {
+    #[inline]
+    fn debug_mask(&self) -> crate::log::DebugMask {
+        crate::log::DebugMask::Http
+    }
+
+    #[inline]
+    fn get_log(&self) -> *const ngx_log_t {
+        // SAFETY: request must have a connecton and connection must have log
+        unsafe { (*self.connection).log }
+    }
+}
+
+impl crate::log::LogTarget for Request {
+    #[inline]
+    fn debug_mask(&self) -> crate::log::DebugMask {
+        crate::log::DebugMask::Http
+    }
+
+    #[inline]
+    fn get_log(&self) -> *const ngx_log_t {
+        // SAFETY: request must have a connecton and connection must have log
+        unsafe { (*self.connection()).log }
+    }
+}
+
 impl Request {
     /// Create a [`Request`] from an [`ngx_http_request_t`].
     ///
