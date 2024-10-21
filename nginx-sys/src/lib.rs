@@ -162,7 +162,7 @@ impl ngx_str_t {
     pub unsafe fn from_string(pool: *mut ngx_pool_t, data: String) -> Self {
         ngx_str_t {
             data: str_to_uchar(pool, data.as_str()),
-            len: data.len() as _,
+            len: data.len(),
         }
     }
 
@@ -183,7 +183,7 @@ impl ngx_str_t {
     pub unsafe fn from_str(pool: *mut ngx_pool_t, data: &str) -> Self {
         ngx_str_t {
             data: str_to_uchar(pool, data),
-            len: data.len() as _,
+            len: data.len(),
         }
     }
 }
@@ -254,9 +254,9 @@ pub unsafe fn add_to_ngx_table(
     }
     table.as_mut().map(|table| {
         table.hash = 1;
-        table.key.len = key.len() as _;
+        table.key.len = key.len();
         table.key.data = str_to_uchar(pool, key);
-        table.value.len = value.len() as _;
+        table.value.len = value.len();
         table.value.data = str_to_uchar(pool, value);
         table.lowcase_key = str_to_uchar(pool, String::from(key).to_ascii_lowercase().as_str());
     })
