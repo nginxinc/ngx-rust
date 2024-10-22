@@ -5,7 +5,22 @@
 use std::ffi::CStr;
 use std::fmt;
 
-use crate::ffi::{self, ngx_err_t, ngx_log_error_core, ngx_log_t, ngx_uint_t};
+use crate::ffi::{self, ngx_conf_log_error, ngx_err_t, ngx_log_error_core, ngx_log_t, ngx_uint_t};
+
+/// Checks if the message of the specified level should be logged with this logger.
+///
+/// # Safety
+///
+/// The function should be called with a valid target pointer.
+#[inline]
+pub unsafe fn should_log<T: LogTarget>(target: *const T, level: Level) -> bool {
+    debug_assert!(!target.is_null());
+    let log = (*target).get_log();
+    if log.is_null() {
+        return false;
+    }
+    (*log).log_level >= level.into()
+}
 
 /// Checks if the debug message with the specified mask should be logged with this logger.
 ///
@@ -29,12 +44,41 @@ pub unsafe fn should_debug<T: LogTarget>(target: *const T, mask: Option<DebugMas
 ///
 /// The function should be called with a valid target pointer.
 #[inline]
-pub unsafe fn log_error<T: LogTarget>(target: *const T, level: ngx_uint_t, err: ngx_err_t, args: fmt::Arguments<'_>) {
+pub unsafe fn log_error<T: LogTarget>(target: *const T, level: Level, err: ngx_err_t, args: fmt::Arguments<'_>) {
     debug_assert!(!target.is_null());
     if let Some(str) = args.as_str() {
         (*target).write_log(level, err, str.as_bytes());
     } else {
         (*target).write_log(level, err, args.to_string().as_bytes());
+    }
+}
+
+/// Severity level
+#[repr(usize)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum Level {
+    /// System is unusable
+    Emerg = ffi::NGX_LOG_EMERG as usize,
+    /// Action must be taken immediately
+    Alert = ffi::NGX_LOG_ALERT as usize,
+    /// Critical conditions
+    Crit = ffi::NGX_LOG_CRIT as usize,
+    /// Error conditions
+    Err = ffi::NGX_LOG_ERR as usize,
+    /// Warning conditions
+    Warn = ffi::NGX_LOG_WARN as usize,
+    /// Normal but significant condition
+    Notice = ffi::NGX_LOG_NOTICE as usize,
+    /// Informational messages
+    Info = ffi::NGX_LOG_INFO as usize,
+    /// Debug-level messages
+    Debug = ffi::NGX_LOG_DEBUG as usize,
+}
+
+impl From<Level> for ngx_uint_t {
+    #[inline]
+    fn from(value: Level) -> Self {
+        value as ngx_uint_t
     }
 }
 
@@ -51,10 +95,10 @@ pub trait LogTarget {
 
     /// Low-level implementation for writing byte slice into the nginx logger
     #[inline]
-    fn write_log(&self, level: ngx_uint_t, err: ngx_err_t, message: &[u8]) {
+    fn write_log(&self, level: Level, err: ngx_err_t, message: &[u8]) {
         const FORMAT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"%*s\0") };
         let log = self.get_log().cast_mut();
-        unsafe { ngx_log_error_core(level, log, err, FORMAT.as_ptr(), message.len(), message.as_ptr()) };
+        unsafe { ngx_log_error_core(level.into(), log, err, FORMAT.as_ptr(), message.len(), message.as_ptr()) };
     }
 }
 
@@ -78,6 +122,22 @@ impl LogTarget for ffi::ngx_conf_t {
     fn get_log(&self) -> *const ngx_log_t {
         self.log
     }
+
+    #[inline]
+    fn write_log(&self, level: Level, err: ngx_err_t, msg: &[u8]) {
+        const FORMAT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"%*s\0") };
+        if level < Level::Debug {
+            // ngx_conf_log_error will not mutate the cf argument.
+            // ngx_log_error_core may mutate the log argument, but cf does not own the log.
+            let cf = self as *const _ as *mut _;
+            unsafe { ngx_conf_log_error(level.into(), cf, err, FORMAT.as_ptr(), msg.len(), msg.as_ptr()) };
+        } else {
+            // Debug messages don't need the configuration file context
+            // SAFETY: this should called after `should_log` or `should_debug`, when we already know
+            // that the log pointer is valid
+            unsafe { &*self.log }.write_log(level, err, msg);
+        }
+    }
 }
 
 impl LogTarget for ffi::ngx_event_t {
@@ -92,13 +152,22 @@ impl LogTarget for ffi::ngx_event_t {
     }
 }
 
+/// Write to logger at a specified [Level].
+#[macro_export]
+macro_rules! ngx_log_error {
+    ( $level:expr, $log:expr, $($arg:tt)* ) => {
+        if unsafe { $crate::log::should_log($log, $level) } {
+            unsafe { $crate::log::log_error($log, $level, 0, format_args!($($arg)*)) };
+        }
+    }
+}
+
 /// Write to logger at debug level.
 #[macro_export]
 macro_rules! ngx_log_debug {
     ( $log:expr, $($arg:tt)* ) => {
         if unsafe { $crate::log::should_debug($log, None) } {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            unsafe { $crate::log::log_error($log, level, 0, format_args!($($arg)*)) };
+            unsafe { $crate::log::log_error($log, $crate::log::Level::Debug, 0, format_args!($($arg)*)) };
         }
     }
 }
@@ -110,8 +179,7 @@ macro_rules! ngx_log_debug {
 macro_rules! ngx_log_debug_http {
     ( $request:expr, $($arg:tt)* ) => {
         if unsafe { $crate::log::should_debug($request, None) } {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            unsafe { $crate::log::log_error($request, level, 0, format_args!($($arg)*)) };
+            unsafe { $crate::log::log_error($request, $crate::log::Level::Debug, 0, format_args!($($arg)*)) };
         }
     }
 }
@@ -128,44 +196,37 @@ macro_rules! ngx_log_debug_http {
 macro_rules! ngx_log_debug_mask {
     ( DebugMask::Core, $log:expr, $($arg:tt)* ) => ({
         if unsafe { $crate::log::should_debug($log, Some(DebugMask::Core)) } {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            unsafe { $crate::log::log_error($log, level, 0, format_args!($($arg)*)) };
+            unsafe { $crate::log::log_error($log, $crate::log::Level::Debug, 0, format_args!($($arg)*)) };
         }
     });
     ( DebugMask::Alloc, $log:expr, $($arg:tt)* ) => ({
         if unsafe { $crate::log::should_debug($log, Some(DebugMask::Alloc)) } {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            unsafe { $crate::log::log_error($log, level, 0, format_args!($($arg)*)) };
+            unsafe { $crate::log::log_error($log, $crate::log::Level::Debug, 0, format_args!($($arg)*)) };
         }
     });
     ( DebugMask::Mutex, $log:expr, $($arg:tt)* ) => ({
         if unsafe { $crate::log::should_debug($log, Some(DebugMask::Mutex)) } {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            unsafe { $crate::log::log_error($log, level, 0, format_args!($($arg)*)) };
+            unsafe { $crate::log::log_error($log, $crate::log::Level::Debug, 0, format_args!($($arg)*)) };
         }
     });
     ( DebugMask::Event, $log:expr, $($arg:tt)* ) => ({
         if unsafe { $crate::log::should_debug($log, Some(DebugMask::Event)) } {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            unsafe { $crate::log::log_error($log, level, 0, format_args!($($arg)*)) };
+            unsafe { $crate::log::log_error($log, $crate::log::Level::Debug, 0, format_args!($($arg)*)) };
         }
     });
     ( DebugMask::Http, $log:expr, $($arg:tt)* ) => ({
         if unsafe { $crate::log::should_debug($log, Some(DebugMask::Http))} {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            unsafe { $crate::log::log_error($log, level, 0, format_args!($($arg)*)) };
+            unsafe { $crate::log::log_error($log, $crate::log::Level::Debug, 0, format_args!($($arg)*)) };
         }
     });
     ( DebugMask::Mail, $log:expr, $($arg:tt)* ) => ({
         if unsafe { $crate::log::should_debug($log, Some(DebugMask::Mail)) } {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            unsafe { $crate::log::log_error($log, level, 0, format_args!($($arg)*)) };
+            unsafe { $crate::log::log_error($log, $crate::log::Level::Debug, 0, format_args!($($arg)*)) };
         }
     });
     ( DebugMask::Stream, $log:expr, $($arg:tt)* ) => ({
         if unsafe { $crate::log::should_debug($log, Some(DebugMask::Stream)) } {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            unsafe { $crate::log::log_error($log, level, 0, format_args!($($arg)*)) };
+            unsafe { $crate::log::log_error($log, $crate::log::Level::Debug, 0, format_args!($($arg)*)) };
         }
     });
 }
@@ -247,7 +308,7 @@ mod tests {
             &self.log
         }
 
-        fn write_log(&self, _level: ngx_uint_t, _err: ngx_err_t, message: &[u8]) {
+        fn write_log(&self, _level: Level, _err: ngx_err_t, message: &[u8]) {
             self.buffer.set(message.to_vec());
         }
     }
@@ -281,5 +342,24 @@ mod tests {
 
         ngx_log_debug_mask!(DebugMask::Alloc, &log, "mask-alloc");
         assert_ne!(log.buffer.take(), b"mask-alloc");
+    }
+    #[test]
+    fn test_level() {
+        let log = MockLog::new(crate::ffi::NGX_LOG_NOTICE);
+
+        ngx_log_error!(Level::Warn, &log, "level-warn");
+        assert_eq!(log.buffer.take(), b"level-warn");
+
+        ngx_log_error!(Level::Notice, &log, "level-notice");
+        assert_eq!(log.buffer.take(), b"level-notice");
+
+        ngx_log_error!(Level::Info, &log, "level-info");
+        assert_ne!(log.buffer.take(), b"level-info");
+
+        ngx_log_error!(Level::Debug, &log, "level-debug");
+        assert_ne!(log.buffer.take(), b"level-debug");
+
+        ngx_log_error!(Level::Err, &log, "level-err");
+        assert_eq!(log.buffer.take(), b"level-err");
     }
 }
