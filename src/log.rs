@@ -13,6 +13,38 @@ pub fn check_mask(mask: DebugMask, log_level: usize) -> bool {
 /// See [Logging](https://nginx.org/en/docs/dev/development_guide.html#logging)
 /// for available log levels.
 #[macro_export]
+macro_rules! ngx_log_error {
+    ( $level:expr, $log:expr, $($arg:tt)+ ) => {
+        let log = $log;
+        let level = $level as $crate::ffi::ngx_uint_t;
+        if level < unsafe { (*log).log_level } {
+            let message = ::std::format!($($arg)+);
+            let message = message.as_bytes();
+            unsafe {
+                $crate::ffi::ngx_log_error_core(level, log, 0, c"%*s".as_ptr(), message.len(), message.as_ptr());
+            }
+        }
+    }
+}
+
+/// Write to logger with the context of currently processed configuration file.
+#[macro_export]
+macro_rules! ngx_conf_log_error {
+    ( $level:expr, $cf:expr, $($arg:tt)+ ) => {
+        let cf: *mut $crate::ffi::ngx_conf_t = $cf;
+        let level = $level as $crate::ffi::ngx_uint_t;
+        if level < unsafe { (*(*cf).log).log_level } {
+            let message = ::std::format!($($arg)+);
+            let message = message.as_bytes();
+            unsafe {
+                $crate::ffi::ngx_conf_log_error(level, cf, 0, c"%*s".as_ptr(), message.len(), message.as_ptr());
+            }
+        }
+    }
+}
+
+/// Write to logger at debug level.
+#[macro_export]
 macro_rules! ngx_log_debug {
     ( mask: $mask:expr, $log:expr, $($arg:tt)+ ) => {
         let log = $log;
