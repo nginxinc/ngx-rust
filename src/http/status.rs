@@ -1,7 +1,8 @@
-use crate::core::Status;
-use crate::ffi::*;
 use std::error::Error;
 use std::fmt;
+
+use crate::core::Status;
+use crate::ffi::*;
 
 /// Represents an HTTP status code.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

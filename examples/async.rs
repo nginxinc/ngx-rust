@@ -1,3 +1,9 @@
+use std::ffi::{c_char, c_void};
+use std::ptr::{addr_of, addr_of_mut};
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
+use std::time::Instant;
+
 use ngx::core;
 use ngx::ffi::{
     nginx_version, ngx_array_push, ngx_command_t, ngx_conf_t, ngx_cycle, ngx_event_t, ngx_http_core_module,
@@ -7,11 +13,6 @@ use ngx::ffi::{
 };
 use ngx::http::{self, HTTPModule, MergeConfigError};
 use ngx::{http_request_handler, ngx_log_debug_http, ngx_null_command, ngx_string};
-use std::ffi::{c_char, c_void};
-use std::ptr::{addr_of, addr_of_mut};
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
-use std::time::Instant;
 use tokio::runtime::Runtime;
 
 struct Module;

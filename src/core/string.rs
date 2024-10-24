@@ -1,8 +1,8 @@
-use crate::ffi::*;
-
 use std::borrow::Cow;
 use std::slice;
 use std::str::{self, Utf8Error};
+
+use crate::ffi::*;
 
 /// Static string initializer for [`ngx_str_t`].
 ///

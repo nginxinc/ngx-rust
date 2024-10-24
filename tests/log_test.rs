@@ -97,8 +97,9 @@ impl Nginx {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::env;
+
+    use super::*;
 
     const TEST_NGINX_CONFIG: &str = "tests/nginx.conf";
 

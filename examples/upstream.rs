@@ -6,30 +6,26 @@
  * The NGINX authors are grateful to @gabihodoroaga for their contributions
  * to the community at large.
  */
-use ngx::{
-    core::{Pool, Status},
-    ffi::{
-        nginx_version, ngx_atoi, ngx_command_t, ngx_conf_log_error, ngx_conf_t, ngx_connection_t,
-        ngx_event_free_peer_pt, ngx_event_get_peer_pt, ngx_http_module_t, ngx_http_upstream_init_peer_pt,
-        ngx_http_upstream_init_pt, ngx_http_upstream_init_round_robin, ngx_http_upstream_module,
-        ngx_http_upstream_srv_conf_t, ngx_http_upstream_t, ngx_int_t, ngx_module_t, ngx_peer_connection_t, ngx_str_t,
-        ngx_uint_t, NGX_CONF_NOARGS, NGX_CONF_TAKE1, NGX_CONF_UNSET, NGX_ERROR, NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF,
-        NGX_LOG_EMERG, NGX_RS_HTTP_SRV_CONF_OFFSET, NGX_RS_MODULE_SIGNATURE,
-    },
-    http::{
-        ngx_http_conf_get_module_srv_conf, ngx_http_conf_upstream_srv_conf_immutable,
-        ngx_http_conf_upstream_srv_conf_mutable, HTTPModule, Merge, MergeConfigError, Request,
-    },
-    http_upstream_init_peer_pt,
-    log::DebugMask,
-    ngx_log_debug_http, ngx_log_debug_mask, ngx_null_command, ngx_string,
+use std::ffi::{c_char, c_void};
+use std::mem;
+use std::ptr::addr_of;
+use std::slice;
+
+use ngx::core::{Pool, Status};
+use ngx::ffi::{
+    nginx_version, ngx_atoi, ngx_command_t, ngx_conf_log_error, ngx_conf_t, ngx_connection_t, ngx_event_free_peer_pt,
+    ngx_event_get_peer_pt, ngx_http_module_t, ngx_http_upstream_init_peer_pt, ngx_http_upstream_init_pt,
+    ngx_http_upstream_init_round_robin, ngx_http_upstream_module, ngx_http_upstream_srv_conf_t, ngx_http_upstream_t,
+    ngx_int_t, ngx_module_t, ngx_peer_connection_t, ngx_str_t, ngx_uint_t, NGX_CONF_NOARGS, NGX_CONF_TAKE1,
+    NGX_CONF_UNSET, NGX_ERROR, NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF, NGX_LOG_EMERG, NGX_RS_HTTP_SRV_CONF_OFFSET,
+    NGX_RS_MODULE_SIGNATURE,
 };
-use std::{
-    ffi::{c_char, c_void},
-    mem,
-    ptr::addr_of,
-    slice,
+use ngx::http::{
+    ngx_http_conf_get_module_srv_conf, ngx_http_conf_upstream_srv_conf_immutable,
+    ngx_http_conf_upstream_srv_conf_mutable, HTTPModule, Merge, MergeConfigError, Request,
 };
+use ngx::log::DebugMask;
+use ngx::{http_upstream_init_peer_pt, ngx_log_debug_http, ngx_log_debug_mask, ngx_null_command, ngx_string};
 
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]

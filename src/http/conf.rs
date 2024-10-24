@@ -1,6 +1,6 @@
-use crate::ffi::*;
-
 use std::ffi::c_void;
+
+use crate::ffi::*;
 
 /// # Safety
 ///

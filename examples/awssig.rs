@@ -1,3 +1,6 @@
+use std::ffi::{c_char, c_void};
+use std::ptr::addr_of;
+
 use http::HeaderMap;
 use ngx::core;
 use ngx::ffi::{
@@ -8,8 +11,6 @@ use ngx::ffi::{
 };
 use ngx::http::*;
 use ngx::{http_request_handler, ngx_log_debug_http, ngx_null_command, ngx_string};
-use std::ffi::{c_char, c_void};
-use std::ptr::addr_of;
 
 struct Module;
 
