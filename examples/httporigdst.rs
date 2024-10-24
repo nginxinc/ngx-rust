@@ -1,3 +1,6 @@
+use std::ffi::{c_char, c_int, c_void};
+use std::ptr::addr_of;
+
 use ngx::core;
 use ngx::ffi::{
     in_port_t, nginx_version, ngx_conf_t, ngx_connection_local_sockaddr, ngx_http_add_variable, ngx_http_module_t,
@@ -6,8 +9,6 @@ use ngx::ffi::{
 };
 use ngx::http::{self, HTTPModule};
 use ngx::{http_variable_get, ngx_http_null_variable, ngx_log_debug_http, ngx_null_string, ngx_string};
-use std::ffi::{c_char, c_int, c_void};
-use std::ptr::addr_of;
 
 const IPV4_STRLEN: usize = INET_ADDRSTRLEN as usize;
 

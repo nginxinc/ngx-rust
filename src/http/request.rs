@@ -1,12 +1,12 @@
+use std::error::Error;
+use std::ffi::c_void;
+use std::fmt;
+use std::str::FromStr;
+
 use crate::core::*;
 use crate::ffi::*;
 use crate::http::status::*;
 use crate::ngx_null_string;
-use std::ffi::c_void;
-use std::fmt;
-
-use std::error::Error;
-use std::str::FromStr;
 
 /// Define a static request handler.
 ///

@@ -1,6 +1,6 @@
-use crate::ffi::*;
-
 use std::slice;
+
+use crate::ffi::*;
 
 /// The `Buffer` trait provides methods for working with an nginx buffer (`ngx_buf_t`).
 pub trait Buffer {
