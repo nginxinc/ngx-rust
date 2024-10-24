@@ -4,7 +4,9 @@ use crate::ffi::*;
 use std::os::raw::c_void;
 use std::{mem, ptr};
 
-/// Wrapper struct for an `ngx_pool_t` pointer, providing methods for working with memory pools.
+/// Wrapper struct for an [`ngx_pool_t`] pointer, providing methods for working with memory pools.
+///
+/// See <https://nginx.org/en/docs/dev/development_guide.html#pool>
 pub struct Pool(*mut ngx_pool_t);
 
 impl Pool {
