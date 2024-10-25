@@ -1,10 +1,10 @@
+use ngx::core;
 use ngx::ffi::{
     in_port_t, nginx_version, ngx_conf_t, ngx_connection_local_sockaddr, ngx_http_add_variable, ngx_http_module_t,
-    ngx_http_request_t, ngx_http_variable_t, ngx_inet_get_port, ngx_int_t, ngx_module_t, ngx_sock_ntop, ngx_str_t,
-    ngx_uint_t, ngx_variable_value_t, sockaddr, sockaddr_storage, INET_ADDRSTRLEN, NGX_HTTP_MODULE,
-    NGX_RS_MODULE_SIGNATURE,
+    ngx_http_variable_t, ngx_inet_get_port, ngx_int_t, ngx_module_t, ngx_sock_ntop, ngx_str_t, ngx_uint_t,
+    ngx_variable_value_t, sockaddr, sockaddr_storage, INET_ADDRSTRLEN, NGX_HTTP_MODULE, NGX_RS_MODULE_SIGNATURE,
 };
-use ngx::{core, core::Status, http, http::HTTPModule};
+use ngx::http::{self, HTTPModule};
 use ngx::{http_variable_get, ngx_http_null_variable, ngx_log_debug_http, ngx_null_string, ngx_string};
 use std::os::raw::{c_char, c_int, c_void};
 use std::ptr::addr_of;

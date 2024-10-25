@@ -16,7 +16,7 @@ pub use string::*;
 #[macro_export]
 macro_rules! ngx_null_command {
     () => {
-        ngx_command_t {
+        $crate::ffi::ngx_command_t {
             name: $crate::ngx_null_string!(),
             type_: 0,
             set: None,
@@ -35,7 +35,7 @@ macro_rules! ngx_null_command {
 #[macro_export]
 macro_rules! ngx_http_null_variable {
     () => {
-        ngx_http_variable_t {
+        $crate::ffi::ngx_http_variable_t {
             name: $crate::ngx_null_string!(),
             set_handler: None,
             get_handler: None,
@@ -54,7 +54,7 @@ macro_rules! ngx_http_null_variable {
 #[macro_export]
 macro_rules! ngx_stream_null_variable {
     () => {
-        ngx_stream_variable_t {
+        $crate::ffi::ngx_stream_variable_t {
             name: $crate::ngx_null_string!(),
             set_handler: None,
             get_handler: None,

@@ -13,8 +13,14 @@
 macro_rules! http_upstream_init_peer_pt {
     ( $name: ident, $handler: expr ) => {
         #[no_mangle]
-        extern "C" fn $name(r: *mut ngx_http_request_t, us: *mut ngx_http_upstream_srv_conf_t) -> ngx_int_t {
-            let status: Status = $handler(unsafe { &mut Request::from_ngx_http_request(r) }, us);
+        extern "C" fn $name(
+            r: *mut $crate::ffi::ngx_http_request_t,
+            us: *mut $crate::ffi::ngx_http_upstream_srv_conf_t,
+        ) -> $crate::ffi::ngx_int_t {
+            let status: $crate::core::Status = $handler(
+                unsafe { &mut $crate::http::Request::from_ngx_http_request(r) },
+                us,
+            );
             status.0
         }
     };

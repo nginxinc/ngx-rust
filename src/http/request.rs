@@ -15,8 +15,9 @@ use std::str::FromStr;
 macro_rules! http_request_handler {
     ( $name: ident, $handler: expr ) => {
         #[no_mangle]
-        extern "C" fn $name(r: *mut ngx_http_request_t) -> ngx_int_t {
-            let status: Status = $handler(unsafe { &mut $crate::http::Request::from_ngx_http_request(r) });
+        extern "C" fn $name(r: *mut $crate::ffi::ngx_http_request_t) -> $crate::ffi::ngx_int_t {
+            let status: $crate::core::Status =
+                $handler(unsafe { &mut $crate::http::Request::from_ngx_http_request(r) });
             status.0
         }
     };
@@ -29,7 +30,11 @@ macro_rules! http_request_handler {
 macro_rules! http_subrequest_handler {
     ( $name: ident, $handler: expr ) => {
         #[no_mangle]
-        unsafe extern "C" fn $name(r: *mut ngx_http_request_t, data: *mut c_void, rc: ngx_int_t) -> ngx_int_t {
+        unsafe extern "C" fn $name(
+            r: *mut $crate::ffi::ngx_http_request_t,
+            data: *mut ::std::ffi::c_void,
+            rc: $crate::ffi::ngx_int_t,
+        ) -> $crate::ffi::ngx_int_t {
             $handler(r, data, rc)
         }
     };
@@ -44,7 +49,11 @@ macro_rules! http_subrequest_handler {
 macro_rules! http_variable_set {
     ( $name: ident, $handler: expr ) => {
         #[no_mangle]
-        unsafe extern "C" fn $name(r: *mut ngx_http_request_t, v: *mut ngx_variable_value_t, data: usize) {
+        unsafe extern "C" fn $name(
+            r: *mut $crate::ffi::ngx_http_request_t,
+            v: *mut $crate::ffi::ngx_variable_value_t,
+            data: usize,
+        ) {
             $handler(
                 unsafe { &mut $crate::http::Request::from_ngx_http_request(r) },
                 v,
@@ -64,8 +73,12 @@ macro_rules! http_variable_set {
 macro_rules! http_variable_get {
     ( $name: ident, $handler: expr ) => {
         #[no_mangle]
-        unsafe extern "C" fn $name(r: *mut ngx_http_request_t, v: *mut ngx_variable_value_t, data: usize) -> ngx_int_t {
-            let status: Status = $handler(
+        unsafe extern "C" fn $name(
+            r: *mut $crate::ffi::ngx_http_request_t,
+            v: *mut $crate::ffi::ngx_variable_value_t,
+            data: usize,
+        ) -> $crate::ffi::ngx_int_t {
+            let status: $crate::core::Status = $handler(
                 unsafe { &mut $crate::http::Request::from_ngx_http_request(r) },
                 v,
                 data,
