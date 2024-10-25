@@ -6,7 +6,7 @@ use ngx::ffi::{
 };
 use ngx::http::{self, HTTPModule, MergeConfigError};
 use ngx::{http_request_handler, ngx_log_debug_http, ngx_null_command, ngx_string};
-use std::os::raw::{c_char, c_void};
+use std::ffi::{c_char, c_void};
 use std::ptr::addr_of;
 
 struct Module;

@@ -2,8 +2,8 @@ use crate::core::NGX_CONF_ERROR;
 use crate::core::*;
 use crate::ffi::*;
 
-use core::ptr;
-use std::os::raw::{c_char, c_void};
+use std::ffi::{c_char, c_void};
+use std::ptr;
 
 /// MergeConfigError - configuration cannot be merged with levels above.
 #[derive(Debug)]

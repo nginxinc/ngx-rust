@@ -1,7 +1,7 @@
 use crate::core::buffer::{Buffer, MemoryBuffer, TemporaryBuffer};
 use crate::ffi::*;
 
-use std::os::raw::c_void;
+use std::ffi::c_void;
 use std::{mem, ptr};
 
 /// Wrapper struct for an `ngx_pool_t` pointer, providing methods for working with memory pools.

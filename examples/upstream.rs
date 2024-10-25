@@ -25,8 +25,8 @@ use ngx::{
     ngx_log_debug_http, ngx_log_debug_mask, ngx_null_command, ngx_string,
 };
 use std::{
+    ffi::{c_char, c_void},
     mem,
-    os::raw::{c_char, c_void},
     ptr::addr_of,
     slice,
 };
