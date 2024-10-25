@@ -64,20 +64,20 @@ pub mod log;
 macro_rules! ngx_modules {
     ($( $mod:ident ),+) => {
         #[no_mangle]
-        pub static mut ngx_modules: [*const ngx_module_t; $crate::count!($( $mod, )+) + 1] = [
-            $( unsafe { &$mod } as *const ngx_module_t, )+
-            std::ptr::null()
+        pub static mut ngx_modules: [*const $crate::ffi::ngx_module_t; $crate::count!($( $mod, )+) + 1] = [
+            $( unsafe { &$mod } as *const $crate::ffi::ngx_module_t, )+
+            ::std::ptr::null()
         ];
 
         #[no_mangle]
-        pub static mut ngx_module_names: [*const c_char; $crate::count!($( $mod, )+) + 1] = [
-            $( concat!(stringify!($mod), "\0").as_ptr() as *const c_char, )+
-            std::ptr::null()
+        pub static mut ngx_module_names: [*const ::std::ffi::c_char; $crate::count!($( $mod, )+) + 1] = [
+            $( concat!(stringify!($mod), "\0").as_ptr() as *const ::std::ffi::c_char, )+
+            ::std::ptr::null()
         ];
 
         #[no_mangle]
-        pub static mut ngx_module_order: [*const c_char; 1] = [
-            std::ptr::null()
+        pub static mut ngx_module_order: [*const ::std::ffi::c_char; 1] = [
+            ::std::ptr::null()
         ];
     };
 }
