@@ -2,8 +2,8 @@ use crate::core::*;
 use crate::ffi::*;
 use crate::http::status::*;
 use crate::ngx_null_string;
+use std::ffi::c_void;
 use std::fmt;
-use std::os::raw::c_void;
 
 use std::error::Error;
 use std::str::FromStr;
