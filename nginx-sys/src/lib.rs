@@ -24,8 +24,7 @@
 //! ```rust,no_run
 //! use nginx_sys::nginx_version;
 //!
-//! let version = unsafe { nginx_version() };
-//! println!("Nginx version: {}", version);
+//! println!("Nginx version: {}", nginx_version);
 //! ```
 //!
 #![warn(missing_docs)]
@@ -77,7 +76,7 @@ pub unsafe fn bytes_to_uchar(pool: *mut ngx_pool_t, data: &[u8]) -> Option<*mut 
 /// A raw pointer (`*mut u_char`) to the allocated memory containing the converted string data.
 ///
 /// # Example
-/// ```rust
+/// ```rust,ignore
 /// let pool: *mut ngx_pool_t = ...; // Obtain a pointer to the nginx memory pool
 /// let data: &str = "example"; // The string to convert
 /// let ptr = str_to_uchar(pool, data);
@@ -237,11 +236,15 @@ impl TryFrom<ngx_str_t> for &str {
 ///
 /// # Example
 /// ```rust
-/// let table: *mut ngx_table_elt_t = ...; // Obtain a pointer to the nginx table entry
-/// let pool: *mut ngx_pool_t = ...; // Obtain a pointer to the nginx memory pool
+/// # use nginx_sys::*;
+/// # unsafe fn example(pool: *mut ngx_pool_t, headers: *mut ngx_list_t) {
+/// // Obtain a pointer to the nginx table entry
+/// let table: *mut ngx_table_elt_t = ngx_list_push(headers).cast();
+/// assert!(!table.is_null());
 /// let key: &str = "key"; // The key to add
 /// let value: &str = "value"; // The value to add
 /// let result = add_to_ngx_table(table, pool, key, value);
+/// # }
 /// ```
 pub unsafe fn add_to_ngx_table(
     table: *mut ngx_table_elt_t,
