@@ -37,7 +37,7 @@ jobs:
           key:  ${{ runner.os }}-deps-${{ hashFiles('**/nginx-sys/build.rs') }}
           restore-keys: ${{ runner.os }}-deps-
       - name: run tests
-        run: cargo test --verbose
+        run: cargo test --verbose --workspace
 
   examples-linux:
     name: Examples (Linux)
@@ -70,7 +70,7 @@ jobs:
           key:  ${{ runner.os }}-deps-${{ hashFiles('**/nginx-sys/build.rs') }}
           restore-keys: ${{ runner.os }}-deps-
       - name: compile examples
-        run: cargo build --release --package examples --examples --verbose
+        run: cargo build --release --package examples --examples --all-features --verbose
 
   test-macos:
     name: Test (MacOS)
@@ -111,7 +111,7 @@ jobs:
       - name: build
         run: cargo build --verbose
       - name: run tests
-        run: cargo test --verbose
+        run: cargo test --verbose --workspace
 
   fmt:
     name: Rustfmt
@@ -124,7 +124,7 @@ jobs:
       - name: rustfmt version
         run: rustfmt --version
       - name: cargo fmt
-        run: cargo fmt --all --verbose --check || true
+        run: cargo fmt --all --verbose --check
 
   clippy:
     name: Clippy
@@ -159,4 +159,4 @@ jobs:
         with:
           components: rustfmt, clippy
       - name: run clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
