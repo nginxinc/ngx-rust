@@ -3,7 +3,8 @@ name: Rust
 on: [ push, pull_request ]
 
 env:
-  CARGO_TERM_COLOR: always
+  CARGO_TERM_COLOR: 'always'
+  CARGO_TERM_VERBOSE: 'true'
 
 jobs:
   test-linux:
@@ -36,8 +37,10 @@ jobs:
             .cache/*.tar.sig
           key:  ${{ runner.os }}-deps-${{ hashFiles('**/nginx-sys/build.rs') }}
           restore-keys: ${{ runner.os }}-deps-
+      - name: build
+        run: cargo build --workspace --all-targets --all-features
       - name: run tests
-        run: cargo test --verbose
+        run: cargo test --workspace --all-features
 
   examples-linux:
     name: Examples (Linux)
@@ -70,7 +73,7 @@ jobs:
           key:  ${{ runner.os }}-deps-${{ hashFiles('**/nginx-sys/build.rs') }}
           restore-keys: ${{ runner.os }}-deps-
       - name: compile examples
-        run: cargo build --release --package examples --examples --verbose
+        run: cargo build --release --package examples --examples --all-features
 
   test-macos:
     name: Test (MacOS)
@@ -109,9 +112,9 @@ jobs:
       - name: disable ipv6 for gpg
         run: echo "disable-ipv6" > .cache/.gnupg/dirmngr.conf
       - name: build
-        run: cargo build --verbose
+        run: cargo build
       - name: run tests
-        run: cargo test --verbose
+        run: cargo test --workspace
 
   fmt:
     name: Rustfmt
@@ -124,7 +127,7 @@ jobs:
       - name: rustfmt version
         run: rustfmt --version
       - name: cargo fmt
-        run: cargo fmt --all --verbose --check || true
+        run: cargo fmt --all --check
 
   clippy:
     name: Clippy
@@ -159,4 +162,4 @@ jobs:
         with:
           components: rustfmt, clippy
       - name: run clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --workspace --all-targets --all-features -- -Dwarnings
