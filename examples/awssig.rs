@@ -310,12 +310,9 @@ http_request_handler!(awssigv4_header_handler, |request: &mut Request| {
         // Copy only headers that will be used to sign the request
         let mut headers = HeaderMap::new();
         for (name, value) in request.headers_in_iterator() {
-            match name.to_lowercase().as_str() {
-                "host" => {
-                    headers.insert(http::header::HOST, value.parse().unwrap());
-                }
-                &_ => {}
-            };
+            if name.to_lowercase() == "host" {
+                headers.insert(http::header::HOST, value.parse().unwrap());
+            }
         }
         headers.insert("X-Amz-Date", datetime_now.parse().unwrap());
         ngx_log_debug_http!(request, "headers {:?}", headers);
