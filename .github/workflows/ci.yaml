@@ -5,6 +5,7 @@ on: [ push, pull_request ]
 env:
   CARGO_TERM_COLOR: 'always'
   CARGO_TERM_VERBOSE: 'true'
+  RUSTDOCFLAGS: '-Dwarnings'
 
 jobs:
   test-linux:
@@ -52,6 +53,10 @@ jobs:
       - name: run tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}  # always run if build succeeds
         run: cargo test --workspace --all-features
+
+      - name: rustdoc
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}  # always run if build succeeds
+        run: cargo doc --no-deps
 
   examples-linux:
     name: Examples (Linux)
