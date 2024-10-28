@@ -1,0 +1,96 @@
+name: NGINX
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: 'always'
+  RUST_BACKTRACE: '1'
+  NGX_CONFIGURE: |
+    auto/configure
+      --with-compat
+      --with-debug
+      --with-http_realip_module
+      --with-http_ssl_module
+      --with-http_v2_module
+      --with-http_v3_module
+      --with-stream
+      --with-stream_realip_module
+      --with-stream_ssl_module
+      --with-threads
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          # static
+          - dynamic
+        nginx-ref:
+          # master
+          - stable-1.26
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.nginx-ref }}
+          repository: 'nginx/nginx'
+          path: 'nginx'
+      - uses: actions/checkout@v4
+        with:
+          repository: 'nginx/nginx-tests'
+          path: 'nginx/tests'
+          sparse-checkout: |
+            lib
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            nginx/objs/ngx_rust_examples
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Configure nginx with static modules
+        if: matrix.module == 'static'
+        working-directory: nginx
+        run: |
+          ${NGX_CONFIGURE} \
+              --add-module=${{ github.workspace }}/examples
+
+      - name: Configure nginx with dynamic modules
+        if: matrix.module != 'static'
+        working-directory: nginx
+        env:
+          TEST_NGINX_GLOBALS: >-
+            load_module ${{ github.workspace }}/nginx/objs/ngx_http_awssigv4_module.so;
+            load_module ${{ github.workspace }}/nginx/objs/ngx_http_curl_module.so;
+            load_module ${{ github.workspace }}/nginx/objs/ngx_http_upstream_custom_module.so;
+        run: |
+          ${NGX_CONFIGURE} \
+              --add-dynamic-module=${{ github.workspace }}/examples
+          echo "TEST_NGINX_GLOBALS=$TEST_NGINX_GLOBALS" >> $GITHUB_ENV
+
+      - name: Build nginx
+        working-directory: nginx
+        run: make -j$(nproc)
+
+      - name: Run tests
+        env:
+          TEST_NGINX_BINARY: ${{ github.workspace }}/nginx/objs/nginx
+          TEST_NGINX_MODULES: ${{ github.workspace }}/nginx/objs
+        run: |
+          prove -v -j$(nproc) -Inginx/tests/lib --state=save examples/t \
+              || prove -v -Inginx/tests/lib --state=failed
