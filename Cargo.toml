@@ -22,10 +22,11 @@ keywords = ["nginx", "module", "sys"]
 nginx-sys = { path = "nginx-sys", version = "0.5.0"}
 
 [features]
+default = ["vendored"]
 # Build our own copy of the NGINX by default.
 # This could be disabled with `--no-default-features` to minimize the dependency tree
 # when building against an existing copy of the NGINX with the NGX_OBJS variable.
-default = ["nginx-sys/vendored"]
+vendored = ["nginx-sys/vendored"]
 
 [badges]
 maintenance = { status = "experimental" }
