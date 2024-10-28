@@ -37,9 +37,20 @@ jobs:
             .cache/*.tar.sig
           key:  ${{ runner.os }}-deps-${{ hashFiles('**/nginx-sys/build.rs') }}
           restore-keys: ${{ runner.os }}-deps-
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
       - name: build
+        id: build
         run: cargo build --workspace --all-targets --all-features
+
+      - name: run clippy
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}  # always run if build succeeds
+        run: cargo clippy --workspace --all-targets --all-features -- -Dwarnings
+
       - name: run tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}  # always run if build succeeds
         run: cargo test --workspace --all-features
 
   examples-linux:
@@ -128,38 +139,3 @@ jobs:
         run: rustfmt --version
       - name: cargo fmt
         run: cargo fmt --all --check
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: set up cargo cache
-        uses: actions/cache@v4
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
-      - name: set up nginx deps source cache
-        uses: actions/cache@v4
-        continue-on-error: false
-        with:
-          path: |
-            .cache/.gnupg
-            .cache/nginx
-            .cache/*.tar.gz
-            .cache/*.tar.asc
-            .cache/*.tar.sig
-          key:  ${{ runner.os }}-deps-${{ hashFiles('**/nginx-sys/build.rs') }}
-          restore-keys: ${{ runner.os }}-deps-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-      - name: run clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -Dwarnings
