@@ -24,7 +24,7 @@ if [ $HTTP = YES ]; then
 
         ngx_module_lib=$NGX_OBJS/$ngx_addon_name/$ngx_cargo_profile/examples/lib$ngx_module_lib.a
         ngx_module_deps=$ngx_module_lib
-        ngx_module_libs=$ngx_module_lib
+        ngx_module_libs="$ngx_module_lib -lm"
 
         # Module deps are usually added to the object file targets, but we don't have any
         LINK_DEPS="$LINK_DEPS $ngx_module_lib"
