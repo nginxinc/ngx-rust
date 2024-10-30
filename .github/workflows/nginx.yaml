@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         module:
-          # static
+          - static
           - dynamic
         nginx-ref:
           # master

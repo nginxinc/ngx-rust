@@ -4,7 +4,7 @@ ngx_cargo_profile=ngx-module
 if [ $HTTP = YES ]; then
     ngx_module_type=HTTP
 
-    if :; then
+    if [ "$ngx_module_link" = DYNAMIC ]; then
         ngx_module_name=ngx_http_async_module
         ngx_module_lib=async
 
