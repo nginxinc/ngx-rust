@@ -8,8 +8,13 @@ homepage.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
-[dev-dependencies]
+build = "../build.rs"
+
+[dependencies]
+nginx-sys = { path = "../nginx-sys/", default-features = false }
 ngx = { path = "../", default-features = false }
+
+[dev-dependencies]
 aws-sign-v4 = "0.3.0"
 chrono = "0.4.23"
 http = "1.1.0"
@@ -41,8 +46,6 @@ crate-type = ["cdylib"]
 name = "async"
 path = "async.rs"
 crate-type = ["cdylib"]
-
-[dependencies]
 
 [features]
 default = ["export-modules", "ngx/vendored"]

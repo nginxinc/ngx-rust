@@ -275,6 +275,7 @@ dependencies = [
  "chrono",
  "http",
  "libc",
+ "nginx-sys",
  "ngx",
  "tokio",
 ]
