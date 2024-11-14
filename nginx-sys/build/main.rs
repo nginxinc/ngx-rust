@@ -2,13 +2,56 @@ extern crate bindgen;
 
 use std::env;
 use std::error::Error as StdError;
-use std::fs::read_to_string;
-use std::path::PathBuf;
+use std::fs::{read_to_string, File};
+use std::io::Write;
+use std::path::{Path, PathBuf};
 
 #[cfg(feature = "vendored")]
 mod vendored;
 
 const ENV_VARS_TRIGGERING_RECOMPILE: [&str; 2] = ["OUT_DIR", "NGX_OBJS"];
+
+/// The feature flags set by the nginx configuration script.
+///
+/// This list is a subset of NGX_/NGX_HAVE_ macros known to affect the structure layout or module
+/// avialiability.
+///
+/// The flags will be exposed to the buildscripts of _direct_ dependendents of this crate as
+/// `DEP_NGINX_FEATURES` environment variable.
+/// The list of recognized values will be exported as `DEP_NGINX_FEATURES_CHECK`.
+const NGX_CONF_FEATURES: &[&str] = &[
+    "compat",
+    "debug",
+    "have_epollrdhup",
+    "have_file_aio",
+    "have_kqueue",
+    "http_cache",
+    "http_dav",
+    "http_gzip",
+    "http_realip",
+    "http_ssi",
+    "http_ssl",
+    "http_upstream_zone",
+    "http_v2",
+    "http_v3",
+    "http_x_forwarded_for",
+    "pcre",
+    "pcre2",
+    "quic",
+    "ssl",
+    "stream_ssl",
+    "stream_upstream_zone",
+    "threads",
+];
+
+/// The operating systems supported by the nginx configuration script
+///
+/// The detected value will be exposed to the buildsrcipts of _direct_ dependents of this crate as
+/// `DEP_NGINX_OS` environment variable.
+/// The list of recognized values will be exported as `DEP_NGINX_OS_CHECK`.
+const NGX_CONF_OS: &[&str] = &[
+    "darwin", "freebsd", "gnu_hurd", "hpux", "linux", "solaris", "tru64", "win32",
+];
 
 /// Function invoked when `cargo build` is executed.
 /// This function will download NGINX and all supporting dependencies, verify their integrity,
@@ -37,10 +80,13 @@ fn main() -> Result<(), Box<dyn StdError>> {
 /// Generates Rust bindings for NGINX
 fn generate_binding(nginx_build_dir: PathBuf) {
     let autoconf_makefile_path = nginx_build_dir.join("Makefile");
-    let clang_args: Vec<String> = parse_includes_from_makefile(&autoconf_makefile_path)
-        .into_iter()
+    let includes = parse_includes_from_makefile(&autoconf_makefile_path);
+    let clang_args: Vec<String> = includes
+        .iter()
         .map(|path| format!("-I{}", path.to_string_lossy()))
         .collect();
+
+    print_cargo_metadata(&includes).expect("cargo dependency metadata");
 
     let bindings = bindgen::Builder::default()
         // Bindings will not compile on Linux without block listing this item
@@ -131,4 +177,96 @@ fn parse_includes_from_makefile(nginx_autoconf_makefile_path: &PathBuf) -> Vec<P
             }
         })
         .collect()
+}
+
+/// Collect info about the nginx configuration and expose it to the dependents via
+/// `DEP_NGINX_...` variables.
+pub fn print_cargo_metadata<T: AsRef<Path>>(includes: &[T]) -> Result<(), Box<dyn StdError>> {
+    // Unquote and merge C string constants
+    let unquote_re = regex::Regex::new(r#""(.*?[^\\])"\s*"#).unwrap();
+    let unquote = |data: &str| -> String {
+        unquote_re
+            .captures_iter(data)
+            .map(|c| c.get(1).unwrap().as_str())
+            .collect::<Vec<_>>()
+            .concat()
+    };
+
+    let mut ngx_features: Vec<String> = vec![];
+    let mut ngx_os = String::new();
+
+    let expanded = expand_definitions(includes)?;
+    for line in String::from_utf8(expanded)?.lines() {
+        let Some((name, value)) = line.trim().strip_prefix("RUST_CONF_").and_then(|x| x.split_once('=')) else {
+            continue;
+        };
+
+        let name = name.trim().to_ascii_lowercase();
+        let value = value.trim();
+
+        if name == "nginx_build" {
+            println!("cargo::metadata=build={}", unquote(value));
+        } else if name == "nginx_version" {
+            println!("cargo::metadata=version={}", unquote(value));
+        } else if name == "nginx_version_number" {
+            println!("cargo::metadata=version_number={value}");
+        } else if NGX_CONF_OS.contains(&name.as_str()) {
+            ngx_os = name;
+        } else if NGX_CONF_FEATURES.contains(&name.as_str()) && value != "0" {
+            ngx_features.push(name);
+        }
+    }
+
+    println!(
+        "cargo::metadata=include={}",
+        // The str conversion is necessary because cargo directives must be valid UTF-8
+        env::join_paths(includes.iter().map(|x| x.as_ref()))?
+            .to_str()
+            .expect("Unicode include paths")
+    );
+
+    // A quoted list of all recognized features to be passed to rustc-check-cfg.
+    println!("cargo::metadata=features_check=\"{}\"", NGX_CONF_FEATURES.join("\",\""));
+    // A list of features enabled in the nginx build we're using
+    println!("cargo::metadata=features={}", ngx_features.join(","));
+
+    // A quoted list of all recognized operating systems to be passed to rustc-check-cfg.
+    println!("cargo::metadata=os_check=\"{}\"", NGX_CONF_OS.join("\",\""));
+    // Current detected operating system
+    println!("cargo::metadata=os={ngx_os}");
+
+    Ok(())
+}
+
+fn expand_definitions<T: AsRef<Path>>(includes: &[T]) -> Result<Vec<u8>, Box<dyn StdError>> {
+    let path = PathBuf::from(env::var("OUT_DIR")?).join("expand.c");
+    let mut writer = std::io::BufWriter::new(File::create(&path)?);
+
+    write!(
+        writer,
+        "
+#include <ngx_config.h>
+#include <nginx.h>
+
+RUST_CONF_NGINX_BUILD=NGINX_VER_BUILD
+RUST_CONF_NGINX_VERSION=NGINX_VER
+RUST_CONF_NGINX_VERSION_NUMBER=nginx_version
+"
+    )?;
+
+    for flag in NGX_CONF_FEATURES.iter().chain(NGX_CONF_OS.iter()) {
+        let flag = flag.to_ascii_uppercase();
+        write!(
+            writer,
+            "
+#if defined(NGX_{flag})
+RUST_CONF_{flag}=NGX_{flag}
+#endif"
+        )?;
+    }
+
+    writer.flush()?;
+    drop(writer);
+
+    Ok(cc::Build::new().includes(includes).file(path).try_expand()?)
 }

@@ -5,6 +5,9 @@ categories = ["external-ffi-bindings"]
 description = "FFI bindings to NGINX"
 keywords = ["nginx", "ffi", "sys"]
 build = "build/main.rs"
+# This field is required to export DEP_NGINX_ vars
+# See https://github.com/rust-lang/cargo/issues/3544
+links = "nginx"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
@@ -15,8 +18,10 @@ rust-version.workspace = true
 
 [build-dependencies]
 bindgen = "0.70.1"
+cc = "1.2.0"
 duct = { version = "0.13.7", optional = true }
 flate2 = { version = "1.0.28", optional = true }
+regex = "1.11.1"
 tar =  { version = "0.4.40", optional = true }
 ureq = { version = "2.9.6", features = ["tls"], optional = true }
 which = { version = "6.0.0", optional = true }
