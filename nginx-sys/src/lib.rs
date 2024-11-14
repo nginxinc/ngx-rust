@@ -1,32 +1,4 @@
-//! # nginx-sys
-//!
-//! The `nginx-sys` crate provides low-level bindings for the nginx C API, allowing Rust applications to interact with nginx servers and modules.
-//!
-//! ## Usage
-//!
-//! Add `nginx-sys` as a dependency in your `Cargo.toml`:
-//!
-//! ```toml
-//! [dependencies]
-//! nginx-sys = "0.1.0"
-//! ```
-//!
-//! ## Features
-//!
-//! - `build`: Enables the build scripts to compile and link against the nginx C library. This feature is enabled by default.
-//!
-//! ## Examples
-//!
-//! ### Get Nginx Version
-//!
-//! This example demonstrates how to retrieve the version of the nginx server.
-//!
-//! ```rust,no_run
-//! use nginx_sys::nginx_version;
-//!
-//! println!("Nginx version: {}", nginx_version);
-//! ```
-//!
+#![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
 use std::fmt;
