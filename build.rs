@@ -43,4 +43,11 @@ fn main() {
     //         println!("cargo::rustc-cfg=nginx1_27_0");
     //     }
     // }
+
+    // Generate required compiler flags
+    if cfg!(target_os = "macos") {
+        // https://stackoverflow.com/questions/28124221/error-linking-with-cc-failed-exit-code-1
+        println!("cargo::rustc-link-arg=-undefined");
+        println!("cargo::rustc-link-arg=dynamic_lookup");
+    }
 }
