@@ -10,9 +10,6 @@ license = "Apache-2.0"
 keywords = ["nginx", "ffi", "sys"]
 build = "build/main.rs"
 
-[lib]
-crate-type = ["staticlib", "rlib"]
-
 [dependencies]
 
 [build-dependencies]
