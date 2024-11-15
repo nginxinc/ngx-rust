@@ -4,19 +4,23 @@ members = [
     "examples",
 ]
 
+[workspace.package]
+edition = "2021"
+license = "Apache-2.0"
+homepage = "https://github.com/nginxinc/ngx-rust"
+repository = "https://github.com/nginxinc/ngx-rust"
+
 [package]
 name = "ngx"
 version = "0.5.0"
-edition = "2021"
 autoexamples = false
 categories = ["api-bindings", "network-programming"]
 description = "FFI bindings to NGINX"
-repository = "https://github.com/nginxinc/ngx-rust"
-homepage = "https://github.com/nginxinc/ngx-rust"
-license = "Apache-2.0"
 keywords = ["nginx", "module", "sys"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 nginx-sys = { path = "nginx-sys", version = "0.5.0"}
