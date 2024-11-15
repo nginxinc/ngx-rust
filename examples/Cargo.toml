@@ -2,8 +2,10 @@
 name = "examples"
 version = "0.0.0"
 publish = false
-edition = "2021"
-license = "Apache-2.0"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dev-dependencies]
 ngx = { path = "../", default-features = false }

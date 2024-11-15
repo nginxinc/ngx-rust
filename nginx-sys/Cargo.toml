@@ -1,14 +1,14 @@
 [package]
 name = "nginx-sys"
 version = "0.5.0"
-edition = "2021"
 categories = ["external-ffi-bindings"]
 description = "FFI bindings to NGINX"
-repository = "https://github.com/nginxinc/ngx-rust"
-homepage = "https://github.com/nginxinc/ngx-rust"
-license = "Apache-2.0"
 keywords = ["nginx", "ffi", "sys"]
 build = "build/main.rs"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 
