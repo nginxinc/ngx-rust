@@ -13,19 +13,21 @@ use std::slice;
 
 use ngx::core::{Pool, Status};
 use ngx::ffi::{
-    nginx_version, ngx_atoi, ngx_command_t, ngx_conf_log_error, ngx_conf_t, ngx_connection_t, ngx_event_free_peer_pt,
+    nginx_version, ngx_atoi, ngx_command_t, ngx_conf_t, ngx_connection_t, ngx_event_free_peer_pt,
     ngx_event_get_peer_pt, ngx_http_module_t, ngx_http_upstream_init_peer_pt, ngx_http_upstream_init_pt,
     ngx_http_upstream_init_round_robin, ngx_http_upstream_module, ngx_http_upstream_srv_conf_t, ngx_http_upstream_t,
     ngx_int_t, ngx_module_t, ngx_peer_connection_t, ngx_str_t, ngx_uint_t, NGX_CONF_NOARGS, NGX_CONF_TAKE1,
-    NGX_CONF_UNSET, NGX_ERROR, NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF, NGX_LOG_EMERG, NGX_RS_HTTP_SRV_CONF_OFFSET,
+    NGX_CONF_UNSET, NGX_ERROR, NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF, NGX_RS_HTTP_SRV_CONF_OFFSET,
     NGX_RS_MODULE_SIGNATURE,
 };
 use ngx::http::{
     ngx_http_conf_get_module_srv_conf, ngx_http_conf_upstream_srv_conf_immutable,
     ngx_http_conf_upstream_srv_conf_mutable, HTTPModule, Merge, MergeConfigError, Request,
 };
-use ngx::log::DebugMask;
-use ngx::{http_upstream_init_peer_pt, ngx_log_debug_http, ngx_log_debug_mask, ngx_null_command, ngx_string};
+use ngx::log::{DebugMask, Level};
+use ngx::{
+    http_upstream_init_peer_pt, ngx_log_debug_http, ngx_log_debug_mask, ngx_log_error, ngx_null_command, ngx_string,
+};
 
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
@@ -247,12 +249,7 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
     let maybe_conf: Option<*mut SrvConfig> =
         ngx_http_conf_upstream_srv_conf_mutable(us, &*addr_of!(ngx_http_upstream_custom_module));
     if maybe_conf.is_none() {
-        ngx_conf_log_error(
-            NGX_LOG_EMERG as usize,
-            cf,
-            0,
-            "CUSTOM UPSTREAM no upstream srv_conf".as_bytes().as_ptr() as *const c_char,
-        );
+        ngx_log_error!(Level::Emerg, cf, "CUSTOM UPSTREAM no upstream srv_conf");
         return isize::from(Status::NGX_ERROR);
     }
     let hccf = maybe_conf.unwrap();
@@ -263,12 +260,7 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
 
     let init_upstream_ptr = (*hccf).original_init_upstream.unwrap();
     if init_upstream_ptr(cf, us) != Status::NGX_OK.into() {
-        ngx_conf_log_error(
-            NGX_LOG_EMERG as usize,
-            cf,
-            0,
-            "CUSTOM UPSTREAM failed calling init_upstream".as_bytes().as_ptr() as *const c_char,
-        );
+        ngx_log_error!(Level::Emerg, cf, "CUSTOM UPSTREAM failed calling init_upstream");
         return isize::from(Status::NGX_ERROR);
     }
 
@@ -296,13 +288,12 @@ unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
         let value: &[ngx_str_t] = slice::from_raw_parts((*(*cf).args).elts as *const ngx_str_t, (*(*cf).args).nelts);
         let n = ngx_atoi(value[1].data, value[1].len);
         if n == (NGX_ERROR as isize) || n == 0 {
-            ngx_conf_log_error(
-                NGX_LOG_EMERG as usize,
+            ngx_log_error!(
+                Level::Emerg,
                 cf,
-                0,
-                "invalid value \"%V\" in \"%V\" directive".as_bytes().as_ptr() as *const c_char,
+                "invalid value \"{}\" in \"{}\" directive",
                 value[1],
-                &(*cmd).name,
+                &(*cmd).name
             );
             return usize::MAX as *mut c_char;
         }
@@ -340,14 +331,7 @@ impl HTTPModule for Module {
         let mut pool = Pool::from_ngx_pool((*cf).pool);
         let conf = pool.alloc_type::<SrvConfig>();
         if conf.is_null() {
-            ngx_conf_log_error(
-                NGX_LOG_EMERG as usize,
-                cf,
-                0,
-                "CUSTOM UPSTREAM could not allocate memory for config"
-                    .as_bytes()
-                    .as_ptr() as *const c_char,
-            );
+            ngx_log_error!(Level::Emerg, cf, "CUSTOM UPSTREAM could not allocate memory for config");
             return std::ptr::null_mut();
         }
 
