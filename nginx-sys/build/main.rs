@@ -60,7 +60,7 @@ const NGX_CONF_OS: &[&str] = &[
 /// NGINX in a subdirectory with the project.
 fn main() -> Result<(), Box<dyn StdError>> {
     let nginx_build_dir = match std::env::var("NGX_OBJS") {
-        Ok(v) => PathBuf::from(v).canonicalize()?,
+        Ok(v) => dunce::canonicalize(v)?,
         #[cfg(feature = "vendored")]
         Err(_) => vendored::build()?,
         #[cfg(not(feature = "vendored"))]
@@ -170,10 +170,7 @@ fn parse_includes_from_makefile(nginx_autoconf_makefile_path: &PathBuf) -> Vec<P
         .parent()
         .expect("makefile path has no parent")
         .parent()
-        .expect("objs dir has no parent")
-        .to_path_buf()
-        .canonicalize()
-        .expect("Unable to canonicalize makefile path");
+        .expect("objs dir has no parent");
 
     includes
         .into_iter()
@@ -185,7 +182,9 @@ fn parse_includes_from_makefile(nginx_autoconf_makefile_path: &PathBuf) -> Vec<P
                 makefile_dir.join(path)
             }
         })
-        .collect()
+        .map(dunce::canonicalize)
+        .collect::<Result<Vec<_>, _>>()
+        .expect("canonicalize include paths")
 }
 
 /// Collect info about the nginx configuration and expose it to the dependents via
