@@ -24,7 +24,6 @@ use ngx::http::{
     ngx_http_conf_get_module_srv_conf, ngx_http_conf_upstream_srv_conf_immutable,
     ngx_http_conf_upstream_srv_conf_mutable, HTTPModule, Merge, MergeConfigError, Request,
 };
-use ngx::log::DebugMask;
 use ngx::{http_upstream_init_peer_pt, ngx_log_debug_http, ngx_log_debug_mask, ngx_null_command, ngx_string};
 
 #[derive(Clone, Copy, Debug)]
