@@ -14,16 +14,19 @@ pub fn check_mask(mask: DebugMask, log_level: usize) -> bool {
 /// for available log levels.
 #[macro_export]
 macro_rules! ngx_log_debug {
-    ( $log:expr, $($arg:tt)* ) => {
-        let log_level = unsafe { (*$log).log_level };
-        if log_level != 0 {
+    ( mask: $mask:expr, $log:expr, $($arg:tt)+ ) => {
+        let log = $log;
+        if $crate::log::check_mask($mask, unsafe { (*log).log_level }) {
             let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
             let fmt = ::std::ffi::CString::new("%s").unwrap();
-            let c_message = ::std::ffi::CString::new(format!($($arg)*)).unwrap();
+            let c_message = ::std::ffi::CString::new(format!($($arg)+)).unwrap();
             unsafe {
-                $crate::ffi::ngx_log_error_core(level, $log, 0, fmt.as_ptr(), c_message.as_ptr());
+                $crate::ffi::ngx_log_error_core(level, log, 0, fmt.as_ptr(), c_message.as_ptr());
             }
         }
+    };
+    ( $log:expr, $($arg:tt)+ ) => {
+        $crate::ngx_log_debug!(mask: $crate::log::DebugMask::All, $log, $($arg)+);
     }
 }
 
@@ -32,9 +35,9 @@ macro_rules! ngx_log_debug {
 /// [`NGX_LOG_DEBUG_HTTP`]: https://nginx.org/en/docs/dev/development_guide.html#logging
 #[macro_export]
 macro_rules! ngx_log_debug_http {
-    ( $request:expr, $($arg:tt)* ) => {
+    ( $request:expr, $($arg:tt)+ ) => {
         let log = unsafe { (*$request.connection()).log };
-        $crate::ngx_log_debug!(log, $($arg)*);
+        $crate::ngx_log_debug!(mask: $crate::log::DebugMask::Http, log, $($arg)+);
     }
 }
 
@@ -48,83 +51,27 @@ macro_rules! ngx_log_debug_http {
 /// masks.
 #[macro_export]
 macro_rules! ngx_log_debug_mask {
-    ( DebugMask::Core, $log:expr, $($arg:tt)* ) => ({
-        let log_level = unsafe { (*$log).log_level };
-        if $crate::log::check_mask(DebugMask::Core, log_level) {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            let fmt = ::std::ffi::CString::new("%s").unwrap();
-            let c_message = ::std::ffi::CString::new(format!($($arg)*)).unwrap();
-            unsafe {
-                $crate::ffi::ngx_log_error_core(level, $log, 0, fmt.as_ptr(), c_message.as_ptr());
-            }
-        }
-    });
-    ( DebugMask::Alloc, $log:expr, $($arg:tt)* ) => ({
-        let log_level = unsafe { (*$log).log_level };
-        if $crate::log::check_mask(DebugMask::Alloc, log_level) {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            let fmt = ::std::ffi::CString::new("%s").unwrap();
-            let c_message = ::std::ffi::CString::new(format!($($arg)*)).unwrap();
-            unsafe {
-                $crate::ffi::ngx_log_error_core(level, $log, 0, fmt.as_ptr(), c_message.as_ptr());
-            }
-        }
-    });
-    ( DebugMask::Mutex, $log:expr, $($arg:tt)* ) => ({
-        let log_level = unsafe { (*$log).log_level };
-        if $crate::log::check_mask(DebugMask::Mutex, log_level) {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            let fmt = ::std::ffi::CString::new("%s").unwrap();
-            let c_message = ::std::ffi::CString::new(format!($($arg)*)).unwrap();
-            unsafe {
-                $crate::ffi::ngx_log_error_core(level, $log, 0, fmt.as_ptr(), c_message.as_ptr());
-            }
-        }
-    });
-    ( DebugMask::Event, $log:expr, $($arg:tt)* ) => ({
-        let log_level = unsafe { (*$log).log_level };
-        if $crate::log::check_mask(DebugMask::Event, log_level) {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            let fmt = ::std::ffi::CString::new("%s").unwrap();
-            let c_message = ::std::ffi::CString::new(format!($($arg)*)).unwrap();
-            unsafe {
-                $crate::ffi::ngx_log_error_core(level, $log, 0, fmt.as_ptr(), c_message.as_ptr());
-            }
-        }
-    });
-    ( DebugMask::Http, $log:expr, $($arg:tt)* ) => ({
-        let log_level = unsafe { (*$log).log_level };
-        if $crate::log::check_mask(DebugMask::Http, log_level) {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            let fmt = ::std::ffi::CString::new("%s").unwrap();
-            let c_message = ::std::ffi::CString::new(format!($($arg)*)).unwrap();
-            unsafe {
-                $crate::ffi::ngx_log_error_core(level, $log, 0, fmt.as_ptr(), c_message.as_ptr());
-            }
-        }
-    });
-    ( DebugMask::Mail, $log:expr, $($arg:tt)* ) => ({
-        let log_level = unsafe { (*$log).log_level };
-        if $crate::log::check_mask(DebugMask::Mail, log_level) {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            let fmt = ::std::ffi::CString::new("%s").unwrap();
-            let c_message = ::std::ffi::CString::new(format!($($arg)*)).unwrap();
-            unsafe {
-                $crate::ffi::ngx_log_error_core(level, $log, 0, fmt.as_ptr(), c_message.as_ptr());
-            }
-        }
-    });
-    ( DebugMask::Stream, $log:expr, $($arg:tt)* ) => ({
-        let log_level = unsafe { (*$log).log_level };
-        if $crate::log::check_mask(DebugMask::Stream, log_level) {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            let fmt = ::std::ffi::CString::new("%s").unwrap();
-            let c_message = ::std::ffi::CString::new(format!($($arg)*)).unwrap();
-            unsafe {
-                $crate::ffi::ngx_log_error_core(level, $log, 0, fmt.as_ptr(), c_message.as_ptr());
-            }
-        }
-    });
+    ( DebugMask::Core, $log:expr, $($arg:tt)+ ) => {
+        $crate::ngx_log_debug!(mask: $crate::log::DebugMask::Core, $log, $($arg)+);
+    };
+    ( DebugMask::Alloc, $log:expr, $($arg:tt)+ ) => {
+        $crate::ngx_log_debug!(mask: $crate::log::DebugMask::Alloc, $log, $($arg)+);
+    };
+    ( DebugMask::Mutex, $log:expr, $($arg:tt)+ ) => {
+        $crate::ngx_log_debug!(mask: $crate::log::DebugMask::Mutex, $log, $($arg)+);
+    };
+    ( DebugMask::Event, $log:expr, $($arg:tt)+ ) => {
+        $crate::ngx_log_debug!(mask: $crate::log::DebugMask::Event, $log, $($arg)+);
+    };
+    ( DebugMask::Http, $log:expr, $($arg:tt)+ ) => {
+        $crate::ngx_log_debug!(mask: $crate::log::DebugMask::Http, $log, $($arg)+);
+    };
+    ( DebugMask::Mail, $log:expr, $($arg:tt)+ ) => {
+        $crate::ngx_log_debug!(mask: $crate::log::DebugMask::Mail, $log, $($arg)+);
+    };
+    ( DebugMask::Stream, $log:expr, $($arg:tt)+ ) => {
+        $crate::ngx_log_debug!(mask: $crate::log::DebugMask::Stream, $log, $($arg)+);
+    };
 }
 
 /// Debug masks for use with [`ngx_log_debug_mask`], these represent the only accepted values for
@@ -145,6 +92,8 @@ pub enum DebugMask {
     Mail,
     /// Aligns to the NGX_LOG_DEBUG_STREAM mask.
     Stream,
+    /// Aligns to the NGX_LOG_DEBUG_ALL mask.
+    All,
 }
 
 impl TryFrom<u32> for DebugMask {
@@ -159,6 +108,7 @@ impl TryFrom<u32> for DebugMask {
             crate::ffi::NGX_LOG_DEBUG_HTTP => Ok(DebugMask::Http),
             crate::ffi::NGX_LOG_DEBUG_MAIL => Ok(DebugMask::Mail),
             crate::ffi::NGX_LOG_DEBUG_STREAM => Ok(DebugMask::Stream),
+            crate::ffi::NGX_LOG_DEBUG_ALL => Ok(DebugMask::All),
             _ => Err(0),
         }
     }
@@ -174,6 +124,7 @@ impl From<DebugMask> for u32 {
             DebugMask::Http => crate::ffi::NGX_LOG_DEBUG_HTTP,
             DebugMask::Mail => crate::ffi::NGX_LOG_DEBUG_MAIL,
             DebugMask::Stream => crate::ffi::NGX_LOG_DEBUG_STREAM,
+            DebugMask::All => crate::ffi::NGX_LOG_DEBUG_ALL,
         }
     }
 }
