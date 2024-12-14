@@ -18,10 +18,10 @@ macro_rules! ngx_log_debug {
         let log = $log;
         if $crate::log::check_mask($mask, unsafe { (*log).log_level }) {
             let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            let fmt = ::std::ffi::CString::new("%s").unwrap();
-            let c_message = ::std::ffi::CString::new(format!($($arg)+)).unwrap();
+            let message = format!($($arg)+);
+            let message = message.as_bytes();
             unsafe {
-                $crate::ffi::ngx_log_error_core(level, log, 0, fmt.as_ptr(), c_message.as_ptr());
+                $crate::ffi::ngx_log_error_core(level, log, 0, c"%*s".as_ptr(), message.len(), message.as_ptr());
             }
         }
     };
