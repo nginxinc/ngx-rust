@@ -361,7 +361,7 @@ fn make_cache_dir() -> Result<PathBuf, Box<dyn StdError>> {
 fn download(cache_dir: &Path, url: &str) -> Result<PathBuf, Box<dyn StdError>> {
     fn proceed_with_download(file_path: &Path) -> bool {
         // File does not exist or is zero bytes
-        !file_path.exists() || file_path.metadata().map_or(false, |m| m.len() < 1)
+        !file_path.exists() || file_path.metadata().is_ok_and(|m| m.len() < 1)
     }
     let filename = url.split('/').last().unwrap();
     let file_path = cache_dir.join(filename);
@@ -544,7 +544,7 @@ fn compile_nginx(cache_dir: &Path) -> Result<(PathBuf, PathBuf), Box<dyn StdErro
     let build_info_path = nginx_src_dir.join("last-build-info");
     let current_build_info = build_info(&nginx_configure_flags);
     let build_info_no_change = if build_info_path.exists() {
-        read_to_string(&build_info_path).map_or(false, |s| s == current_build_info)
+        read_to_string(&build_info_path).is_ok_and(|s| s == current_build_info)
     } else {
         false
     };
@@ -599,7 +599,7 @@ fn nginx_configure_flags(
         modules
     };
     let mut nginx_opts = vec![format_source_path("--prefix", nginx_install_dir)];
-    if env::var("NGX_DEBUG").map_or(false, |s| s == "true") {
+    if env::var("NGX_DEBUG").is_ok_and(|s| s == "true") {
         println!("Enabling --with-debug");
         nginx_opts.push("--with-debug".to_string());
     }
