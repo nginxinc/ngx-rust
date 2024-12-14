@@ -59,9 +59,6 @@ pub mod http;
 /// The log module.
 ///
 /// This module provides an interface into the NGINX logger framework.
-///
-/// This module is temporally available only with `std` feature.
-#[cfg(feature = "std")]
 pub mod log;
 
 /// Define modules exported by this library.
