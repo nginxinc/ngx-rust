@@ -1,3 +1,15 @@
+use core::cmp;
+use core::fmt::{self, Write};
+use core::mem::MaybeUninit;
+
+use crate::ffi::NGX_MAX_ERROR_STR;
+
+/// Size of the static buffer used to format log messages.
+///
+/// Approximates the remaining space in `u_char[NGX_MAX_ERROR_STR]` after writing the standard
+/// prefix
+pub const LOG_BUFFER_SIZE: usize = NGX_MAX_ERROR_STR as usize - b"1970/01/01 00:00:00 [info] 1#1: ".len();
+
 /// Utility function to provide typed checking of the mask's field state.
 #[inline(always)]
 pub fn check_mask(mask: DebugMask, log_level: usize) -> bool {
@@ -6,6 +18,21 @@ pub fn check_mask(mask: DebugMask, log_level: usize) -> bool {
         return false;
     }
     true
+}
+
+/// Format args into a provided buffer
+// May produce incomplete UTF-8 sequences. But any writes to `ngx_log_t` already can be truncated,
+// so nothing we can do here.
+#[inline]
+pub fn write_fmt<'a>(buf: &'a mut [MaybeUninit<u8>], args: fmt::Arguments<'_>) -> &'a [u8] {
+    if let Some(str) = args.as_str() {
+        str.as_bytes()
+    } else {
+        let mut buf = LogBuf::from(buf);
+        // nothing we can or want to do on errors
+        let _ = buf.write_fmt(args);
+        buf.filled()
+    }
 }
 
 /// Write to logger at a specified level.
@@ -18,8 +45,8 @@ macro_rules! ngx_log_error {
         let log = $log;
         let level = $level as $crate::ffi::ngx_uint_t;
         if level < unsafe { (*log).log_level } {
-            let message = ::std::format!($($arg)+);
-            let message = message.as_bytes();
+            let mut buf = [const { ::core::mem::MaybeUninit::<u8>::uninit() }; $crate::log::LOG_BUFFER_SIZE];
+            let message = $crate::log::write_fmt(&mut buf, format_args!($($arg)+));
             unsafe {
                 $crate::ffi::ngx_log_error_core(level, log, 0, c"%*s".as_ptr(), message.len(), message.as_ptr());
             }
@@ -34,8 +61,8 @@ macro_rules! ngx_conf_log_error {
         let cf: *mut $crate::ffi::ngx_conf_t = $cf;
         let level = $level as $crate::ffi::ngx_uint_t;
         if level < unsafe { (*(*cf).log).log_level } {
-            let message = ::std::format!($($arg)+);
-            let message = message.as_bytes();
+            let mut buf = [const { ::core::mem::MaybeUninit::<u8>::uninit() }; $crate::log::LOG_BUFFER_SIZE];
+            let message = $crate::log::write_fmt(&mut buf, format_args!($($arg)+));
             unsafe {
                 $crate::ffi::ngx_conf_log_error(level, cf, 0, c"%*s".as_ptr(), message.len(), message.as_ptr());
             }
@@ -50,8 +77,8 @@ macro_rules! ngx_log_debug {
         let log = $log;
         if $crate::log::check_mask($mask, unsafe { (*log).log_level }) {
             let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
-            let message = format!($($arg)+);
-            let message = message.as_bytes();
+            let mut buf = [const { ::core::mem::MaybeUninit::<u8>::uninit() }; $crate::log::LOG_BUFFER_SIZE];
+            let message = $crate::log::write_fmt(&mut buf, format_args!($($arg)+));
             unsafe {
                 $crate::ffi::ngx_log_error_core(level, log, 0, c"%*s".as_ptr(), message.len(), message.as_ptr());
             }
@@ -161,6 +188,52 @@ impl From<DebugMask> for u32 {
     }
 }
 
+/// Minimal subset of unstable core::io::{BorrowedBuf,BorrowedCursor}
+struct LogBuf<'data> {
+    buf: &'data mut [MaybeUninit<u8>],
+    filled: usize,
+}
+
+impl<'data> LogBuf<'data> {
+    pub fn filled(&self) -> &'data [u8] {
+        // SAFETY: valid bytes have been written to self.buf[..self.filled]
+        unsafe {
+            let buf = self.buf.get_unchecked(..self.filled);
+            // inlined MaybeUninit::slice_assume_init_ref
+            &*(buf as *const [MaybeUninit<u8>] as *const [u8])
+        }
+    }
+
+    pub fn append(&mut self, buf: &[u8]) -> &mut Self {
+        let n = cmp::min(self.buf.len() - self.filled, buf.len());
+        unsafe {
+            // SAFETY: The source buf has at least n bytes
+            let src = buf.get_unchecked(..n);
+            // SAFETY: &[u8] and &[MaybeUninit<u8>] have the same layout
+            let src: &[MaybeUninit<u8>] = core::mem::transmute(src);
+            // SAFETY: self.buf has at least n bytes available after self.filled
+            self.buf
+                .get_unchecked_mut(self.filled..self.filled + n)
+                .copy_from_slice(src);
+        }
+        self.filled += n;
+        self
+    }
+}
+
+impl<'data> From<&'data mut [MaybeUninit<u8>]> for LogBuf<'data> {
+    fn from(buf: &'data mut [MaybeUninit<u8>]) -> Self {
+        Self { buf, filled: 0 }
+    }
+}
+
+impl fmt::Write for LogBuf<'_> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.append(s.as_bytes());
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -186,5 +259,26 @@ mod tests {
 
         r = check_mask(DebugMask::Alloc, mock.log_level);
         assert!(!r);
+    }
+
+    #[test]
+    fn log_buffer() {
+        use core::str;
+
+        let mut buf = [const { MaybeUninit::<u8>::uninit() }; 32];
+        let mut buf = LogBuf::from(&mut buf[..]);
+        let words = ["Hello", "World"];
+
+        // normal write
+        write!(&mut buf, "{} {}!", words[0], words[1]).unwrap();
+        assert_eq!(str::from_utf8(buf.filled()), Ok("Hello World!"));
+
+        // overflow results in truncated output
+        write!(&mut buf, " This is a test, {}", usize::MAX).unwrap();
+        assert_eq!(str::from_utf8(buf.filled()), Ok("Hello World! This is a test, 184"));
+
+        // and any following writes are still safe
+        write!(&mut buf, "test").unwrap();
+        assert_eq!(str::from_utf8(buf.filled()), Ok("Hello World! This is a test, 184"));
     }
 }
