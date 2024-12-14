@@ -613,7 +613,7 @@ impl<'a> PartialEq<&'a Method> for Method {
     }
 }
 
-impl<'a> PartialEq<Method> for &'a Method {
+impl PartialEq<Method> for &Method {
     #[inline]
     fn eq(&self, other: &Method) -> bool {
         *self == other
@@ -641,7 +641,7 @@ impl<'a> PartialEq<&'a str> for Method {
     }
 }
 
-impl<'a> PartialEq<Method> for &'a str {
+impl PartialEq<Method> for &str {
     #[inline]
     fn eq(&self, other: &Method) -> bool {
         *self == other.as_ref()
