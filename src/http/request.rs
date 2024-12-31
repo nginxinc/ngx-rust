@@ -14,7 +14,6 @@ use crate::ngx_null_string;
 #[macro_export]
 macro_rules! http_request_handler {
     ( $name: ident, $handler: expr ) => {
-        #[no_mangle]
         extern "C" fn $name(r: *mut $crate::ffi::ngx_http_request_t) -> $crate::ffi::ngx_int_t {
             let status: $crate::core::Status =
                 $handler(unsafe { &mut $crate::http::Request::from_ngx_http_request(r) });
@@ -29,7 +28,6 @@ macro_rules! http_request_handler {
 #[macro_export]
 macro_rules! http_subrequest_handler {
     ( $name: ident, $handler: expr ) => {
-        #[no_mangle]
         unsafe extern "C" fn $name(
             r: *mut $crate::ffi::ngx_http_request_t,
             data: *mut ::std::ffi::c_void,
@@ -48,7 +46,6 @@ macro_rules! http_subrequest_handler {
 #[macro_export]
 macro_rules! http_variable_set {
     ( $name: ident, $handler: expr ) => {
-        #[no_mangle]
         unsafe extern "C" fn $name(
             r: *mut $crate::ffi::ngx_http_request_t,
             v: *mut $crate::ffi::ngx_variable_value_t,
@@ -72,7 +69,6 @@ macro_rules! http_variable_set {
 #[macro_export]
 macro_rules! http_variable_get {
     ( $name: ident, $handler: expr ) => {
-        #[no_mangle]
         unsafe extern "C" fn $name(
             r: *mut $crate::ffi::ngx_http_request_t,
             v: *mut $crate::ffi::ngx_variable_value_t,

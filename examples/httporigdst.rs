@@ -76,7 +76,6 @@ impl NgxHttpOrigDstCtx {
     }
 }
 
-#[no_mangle]
 static ngx_http_orig_dst_module_ctx: ngx_http_module_t = ngx_http_module_t {
     preconfiguration: Some(Module::preconfiguration),
     postconfiguration: Some(Module::postconfiguration),
@@ -93,8 +92,8 @@ static ngx_http_orig_dst_module_ctx: ngx_http_module_t = ngx_http_module_t {
 #[cfg(feature = "export-modules")]
 ngx::ngx_modules!(ngx_http_orig_dst_module);
 
-#[no_mangle]
 #[used]
+#[cfg_attr(not(feature = "export-modules"), no_mangle)]
 pub static mut ngx_http_orig_dst_module: ngx_module_t = ngx_module_t {
     ctx_index: ngx_uint_t::MAX,
     index: ngx_uint_t::MAX,
@@ -125,7 +124,6 @@ pub static mut ngx_http_orig_dst_module: ngx_module_t = ngx_module_t {
     spare_hook7: 0,
 };
 
-#[no_mangle]
 static mut ngx_http_orig_dst_vars: [ngx_http_variable_t; 3] = [
     // ngx_str_t name
     // ngx_http_set_variable_pt set_handler

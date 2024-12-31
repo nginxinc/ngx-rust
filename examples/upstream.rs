@@ -76,7 +76,6 @@ impl Default for UpstreamPeerData {
     }
 }
 
-#[no_mangle]
 static ngx_http_upstream_custom_ctx: ngx_http_module_t = ngx_http_module_t {
     preconfiguration: Some(Module::preconfiguration),
     postconfiguration: Some(Module::postconfiguration),
@@ -88,7 +87,6 @@ static ngx_http_upstream_custom_ctx: ngx_http_module_t = ngx_http_module_t {
     merge_loc_conf: Some(Module::merge_loc_conf),
 };
 
-#[no_mangle]
 static mut ngx_http_upstream_custom_commands: [ngx_command_t; 2] = [
     ngx_command_t {
         name: ngx_string!("custom"),
@@ -106,8 +104,8 @@ static mut ngx_http_upstream_custom_commands: [ngx_command_t; 2] = [
 #[cfg(feature = "export-modules")]
 ngx::ngx_modules!(ngx_http_upstream_custom_module);
 
-#[no_mangle]
 #[used]
+#[cfg_attr(not(feature = "export-modules"), no_mangle)]
 pub static mut ngx_http_upstream_custom_module: ngx_module_t = ngx_module_t {
     ctx_index: ngx_uint_t::MAX,
     index: ngx_uint_t::MAX,
@@ -191,7 +189,6 @@ http_upstream_init_peer_pt!(
 // ngx_http_usptream_get_custom_peer
 // For demonstration purposes, use the original get callback, but log this callback proxies through
 // to the original.
-#[no_mangle]
 unsafe extern "C" fn ngx_http_upstream_get_custom_peer(pc: *mut ngx_peer_connection_t, data: *mut c_void) -> ngx_int_t {
     let hcpd: *mut UpstreamPeerData = unsafe { mem::transmute(data) };
 
@@ -217,7 +214,6 @@ unsafe extern "C" fn ngx_http_upstream_get_custom_peer(pc: *mut ngx_peer_connect
 // ngx_http_upstream_free_custom_peer
 // For demonstration purposes, use the original free callback, but log this callback proxies
 // through to the original.
-#[no_mangle]
 unsafe extern "C" fn ngx_http_upstream_free_custom_peer(
     pc: *mut ngx_peer_connection_t,
     data: *mut c_void,
@@ -237,7 +233,6 @@ unsafe extern "C" fn ngx_http_upstream_free_custom_peer(
 // ngx_http_upstream_init_custom
 // The module's custom `peer.init_upstream` callback.
 // The original callback is saved in our SrvConfig data and reset to this module's `peer.init`.
-#[no_mangle]
 unsafe extern "C" fn ngx_http_upstream_init_custom(
     cf: *mut ngx_conf_t,
     us: *mut ngx_http_upstream_srv_conf_t,
@@ -282,7 +277,6 @@ unsafe extern "C" fn ngx_http_upstream_init_custom(
 // ngx_http_upstream_commands_set_custom
 // Entry point for the module, if this command is set our custom upstreams take effect.
 // The original upstream initializer function is saved and replaced with this module's initializer.
-#[no_mangle]
 unsafe extern "C" fn ngx_http_upstream_commands_set_custom(
     cf: *mut ngx_conf_t,
     cmd: *mut ngx_command_t,

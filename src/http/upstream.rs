@@ -12,7 +12,6 @@
 #[macro_export]
 macro_rules! http_upstream_init_peer_pt {
     ( $name: ident, $handler: expr ) => {
-        #[no_mangle]
         extern "C" fn $name(
             r: *mut $crate::ffi::ngx_http_request_t,
             us: *mut $crate::ffi::ngx_http_upstream_srv_conf_t,
