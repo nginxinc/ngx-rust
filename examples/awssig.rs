@@ -42,7 +42,6 @@ struct ModuleConfig {
     s3_endpoint: String,
 }
 
-#[no_mangle]
 static mut ngx_http_awssigv4_commands: [ngx_command_t; 6] = [
     ngx_command_t {
         name: ngx_string!("awssigv4"),
@@ -87,7 +86,6 @@ static mut ngx_http_awssigv4_commands: [ngx_command_t; 6] = [
     ngx_null_command!(),
 ];
 
-#[no_mangle]
 static ngx_http_awssigv4_module_ctx: ngx_http_module_t = ngx_http_module_t {
     preconfiguration: Some(Module::preconfiguration),
     postconfiguration: Some(Module::postconfiguration),
@@ -104,8 +102,8 @@ static ngx_http_awssigv4_module_ctx: ngx_http_module_t = ngx_http_module_t {
 #[cfg(feature = "export-modules")]
 ngx::ngx_modules!(ngx_http_awssigv4_module);
 
-#[no_mangle]
 #[used]
+#[cfg_attr(not(feature = "export-modules"), no_mangle)]
 pub static mut ngx_http_awssigv4_module: ngx_module_t = ngx_module_t {
     ctx_index: ngx_uint_t::MAX,
     index: ngx_uint_t::MAX,
@@ -187,7 +185,6 @@ impl Merge for ModuleConfig {
     }
 }
 
-#[no_mangle]
 extern "C" fn ngx_http_awssigv4_commands_set_enable(
     cf: *mut ngx_conf_t,
     _cmd: *mut ngx_command_t,
@@ -211,7 +208,6 @@ extern "C" fn ngx_http_awssigv4_commands_set_enable(
     std::ptr::null_mut()
 }
 
-#[no_mangle]
 extern "C" fn ngx_http_awssigv4_commands_set_access_key(
     cf: *mut ngx_conf_t,
     _cmd: *mut ngx_command_t,
@@ -226,7 +222,6 @@ extern "C" fn ngx_http_awssigv4_commands_set_access_key(
     std::ptr::null_mut()
 }
 
-#[no_mangle]
 extern "C" fn ngx_http_awssigv4_commands_set_secret_key(
     cf: *mut ngx_conf_t,
     _cmd: *mut ngx_command_t,
@@ -241,7 +236,6 @@ extern "C" fn ngx_http_awssigv4_commands_set_secret_key(
     std::ptr::null_mut()
 }
 
-#[no_mangle]
 extern "C" fn ngx_http_awssigv4_commands_set_s3_bucket(
     cf: *mut ngx_conf_t,
     _cmd: *mut ngx_command_t,
@@ -259,7 +253,6 @@ extern "C" fn ngx_http_awssigv4_commands_set_s3_bucket(
     std::ptr::null_mut()
 }
 
-#[no_mangle]
 extern "C" fn ngx_http_awssigv4_commands_set_s3_endpoint(
     cf: *mut ngx_conf_t,
     _cmd: *mut ngx_command_t,

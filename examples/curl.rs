@@ -36,7 +36,6 @@ struct ModuleConfig {
     enable: bool,
 }
 
-#[no_mangle]
 static mut ngx_http_curl_commands: [ngx_command_t; 2] = [
     ngx_command_t {
         name: ngx_string!("curl"),
@@ -49,7 +48,6 @@ static mut ngx_http_curl_commands: [ngx_command_t; 2] = [
     ngx_null_command!(),
 ];
 
-#[no_mangle]
 static ngx_http_curl_module_ctx: ngx_http_module_t = ngx_http_module_t {
     preconfiguration: Some(Module::preconfiguration),
     postconfiguration: Some(Module::postconfiguration),
@@ -66,8 +64,8 @@ static ngx_http_curl_module_ctx: ngx_http_module_t = ngx_http_module_t {
 #[cfg(feature = "export-modules")]
 ngx::ngx_modules!(ngx_http_curl_module);
 
-#[no_mangle]
 #[used]
+#[cfg_attr(not(feature = "export-modules"), no_mangle)]
 pub static mut ngx_http_curl_module: ngx_module_t = ngx_module_t {
     ctx_index: ngx_uint_t::MAX,
     index: ngx_uint_t::MAX,
@@ -129,7 +127,6 @@ http_request_handler!(curl_access_handler, |request: &mut http::Request| {
     }
 });
 
-#[no_mangle]
 extern "C" fn ngx_http_curl_commands_set_enable(
     cf: *mut ngx_conf_t,
     _cmd: *mut ngx_command_t,
