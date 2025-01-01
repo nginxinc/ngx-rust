@@ -76,7 +76,7 @@ impl NgxHttpOrigDstCtx {
     }
 }
 
-static ngx_http_orig_dst_module_ctx: ngx_http_module_t = ngx_http_module_t {
+static NGX_HTTP_ORIG_DST_MODULE_CTX: ngx_http_module_t = ngx_http_module_t {
     preconfiguration: Some(Module::preconfiguration),
     postconfiguration: Some(Module::postconfiguration),
     create_main_conf: Some(Module::create_main_conf),
@@ -93,6 +93,7 @@ static ngx_http_orig_dst_module_ctx: ngx_http_module_t = ngx_http_module_t {
 ngx::ngx_modules!(ngx_http_orig_dst_module);
 
 #[used]
+#[allow(non_upper_case_globals)]
 #[cfg_attr(not(feature = "export-modules"), no_mangle)]
 pub static mut ngx_http_orig_dst_module: ngx_module_t = ngx_module_t {
     ctx_index: ngx_uint_t::MAX,
@@ -102,7 +103,7 @@ pub static mut ngx_http_orig_dst_module: ngx_module_t = ngx_module_t {
     spare1: 0,
     version: nginx_version as ngx_uint_t,
     signature: NGX_RS_MODULE_SIGNATURE.as_ptr() as *const c_char,
-    ctx: &ngx_http_orig_dst_module_ctx as *const _ as *mut _,
+    ctx: &NGX_HTTP_ORIG_DST_MODULE_CTX as *const _ as *mut _,
     commands: std::ptr::null_mut(),
     type_: NGX_HTTP_MODULE as ngx_uint_t,
 
@@ -124,7 +125,7 @@ pub static mut ngx_http_orig_dst_module: ngx_module_t = ngx_module_t {
     spare_hook7: 0,
 };
 
-static mut ngx_http_orig_dst_vars: [ngx_http_variable_t; 3] = [
+static mut NGX_HTTP_ORIG_DST_VARS: [ngx_http_variable_t; 3] = [
     // ngx_str_t name
     // ngx_http_set_variable_pt set_handler
     // ngx_http_get_variable_pt get_handler
@@ -297,7 +298,7 @@ impl HTTPModule for Module {
 
     // static ngx_int_t ngx_http_orig_dst_add_variables(ngx_conf_t *cf)
     unsafe extern "C" fn preconfiguration(cf: *mut ngx_conf_t) -> ngx_int_t {
-        for mut v in ngx_http_orig_dst_vars {
+        for mut v in NGX_HTTP_ORIG_DST_VARS {
             if v.name.len == 0 {
                 break;
             }
