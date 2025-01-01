@@ -54,7 +54,7 @@ impl Default for ModuleConfig {
     }
 }
 
-static mut ngx_http_async_commands: [ngx_command_t; 2] = [
+static mut NGX_HTTP_ASYNC_COMMANDS: [ngx_command_t; 2] = [
     ngx_command_t {
         name: ngx_string!("async"),
         type_: (NGX_HTTP_LOC_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
@@ -66,7 +66,7 @@ static mut ngx_http_async_commands: [ngx_command_t; 2] = [
     ngx_null_command!(),
 ];
 
-static ngx_http_async_module_ctx: ngx_http_module_t = ngx_http_module_t {
+static NGX_HTTP_ASYNC_MODULE_CTX: ngx_http_module_t = ngx_http_module_t {
     preconfiguration: Some(Module::preconfiguration),
     postconfiguration: Some(Module::postconfiguration),
     create_main_conf: Some(Module::create_main_conf),
@@ -83,6 +83,7 @@ static ngx_http_async_module_ctx: ngx_http_module_t = ngx_http_module_t {
 ngx::ngx_modules!(ngx_http_async_module);
 
 #[used]
+#[allow(non_upper_case_globals)]
 #[cfg_attr(not(feature = "export-modules"), no_mangle)]
 pub static mut ngx_http_async_module: ngx_module_t = ngx_module_t {
     ctx_index: ngx_uint_t::MAX,
@@ -93,8 +94,8 @@ pub static mut ngx_http_async_module: ngx_module_t = ngx_module_t {
     version: nginx_version as ngx_uint_t,
     signature: NGX_RS_MODULE_SIGNATURE.as_ptr() as *const c_char,
 
-    ctx: &ngx_http_async_module_ctx as *const _ as *mut _,
-    commands: unsafe { &ngx_http_async_commands[0] as *const _ as *mut _ },
+    ctx: &NGX_HTTP_ASYNC_MODULE_CTX as *const _ as *mut _,
+    commands: unsafe { &NGX_HTTP_ASYNC_COMMANDS[0] as *const _ as *mut _ },
     type_: NGX_HTTP_MODULE as ngx_uint_t,
 
     init_master: None,
