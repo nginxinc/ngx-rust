@@ -1,5 +1,5 @@
-use std::ffi::c_void;
-use std::{mem, ptr};
+use core::ffi::c_void;
+use core::{mem, ptr};
 
 use crate::core::buffer::{Buffer, MemoryBuffer, TemporaryBuffer};
 use crate::ffi::*;

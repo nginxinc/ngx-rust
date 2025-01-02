@@ -1,4 +1,4 @@
-use std::slice;
+use core::slice;
 
 use crate::ffi::*;
 
