@@ -22,7 +22,7 @@ macro_rules! ngx_null_command {
             set: None,
             conf: 0,
             offset: 0,
-            post: ::std::ptr::null_mut(),
+            post: ::core::ptr::null_mut(),
         }
     };
 }

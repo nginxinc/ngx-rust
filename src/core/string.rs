@@ -1,6 +1,10 @@
-use std::borrow::Cow;
-use std::slice;
-use std::str::{self, Utf8Error};
+use core::slice;
+use core::str::{self, Utf8Error};
+
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+use alloc::{borrow::Cow, string::String};
+#[cfg(feature = "std")]
+use std::{borrow::Cow, string::String};
 
 use crate::ffi::*;
 
@@ -27,7 +31,7 @@ macro_rules! ngx_null_string {
     () => {
         $crate::ffi::ngx_str_t {
             len: 0,
-            data: ::std::ptr::null_mut(),
+            data: ::core::ptr::null_mut(),
         }
     };
 }
@@ -64,6 +68,7 @@ impl NgxStr {
     /// Converts an [`NgxStr`] into a [`Cow<str>`], replacing invalid UTF-8 sequences.
     ///
     /// See [`String::from_utf8_lossy`].
+    #[cfg(feature = "alloc")]
     pub fn to_string_lossy(&self) -> Cow<str> {
         String::from_utf8_lossy(self.as_bytes())
     }

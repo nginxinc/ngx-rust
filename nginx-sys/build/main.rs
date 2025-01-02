@@ -97,6 +97,7 @@ fn generate_binding(nginx_build_dir: PathBuf) {
         .header("build/wrapper.h")
         .clang_args(clang_args)
         .layout_tests(false)
+        .use_core()
         .generate()
         .expect("Unable to generate bindings");
 

@@ -1,8 +1,7 @@
+use core::ffi::c_void;
+use core::fmt;
 use core::slice;
-use std::error::Error;
-use std::ffi::c_void;
-use std::fmt;
-use std::str::FromStr;
+use core::str::FromStr;
 
 use crate::core::*;
 use crate::ffi::*;
@@ -31,7 +30,7 @@ macro_rules! http_subrequest_handler {
     ( $name: ident, $handler: expr ) => {
         unsafe extern "C" fn $name(
             r: *mut $crate::ffi::ngx_http_request_t,
-            data: *mut ::std::ffi::c_void,
+            data: *mut ::core::ffi::c_void,
             rc: $crate::ffi::ngx_int_t,
         ) -> $crate::ffi::ngx_int_t {
             $handler(r, data, rc)
@@ -117,7 +116,7 @@ impl Request {
     /// Is this the main request (as opposed to a subrequest)?
     pub fn is_main(&self) -> bool {
         let main = self.0.main.cast();
-        std::ptr::eq(self, main)
+        core::ptr::eq(self, main)
     }
 
     /// Request pool.
@@ -338,7 +337,7 @@ impl Request {
                 ngx_http_internal_redirect(
                     (self as *const Request as *mut Request).cast(),
                     uri_ptr,
-                    std::ptr::null_mut(),
+                    core::ptr::null_mut(),
                 );
             }
         }
@@ -355,7 +354,7 @@ impl Request {
         let uri_ptr = unsafe { &mut ngx_str_t::from_str(self.0.pool, uri) as *mut _ };
         // -------------
         // allocate memory and set values for ngx_http_post_subrequest_t
-        let sub_ptr = self.pool().alloc(std::mem::size_of::<ngx_http_post_subrequest_t>());
+        let sub_ptr = self.pool().alloc(core::mem::size_of::<ngx_http_post_subrequest_t>());
 
         // assert!(sub_ptr.is_null());
         let post_subreq = sub_ptr as *const ngx_http_post_subrequest_t as *mut ngx_http_post_subrequest_t;
@@ -365,12 +364,12 @@ impl Request {
         }
         // -------------
 
-        let mut psr: *mut ngx_http_request_t = std::ptr::null_mut();
+        let mut psr: *mut ngx_http_request_t = core::ptr::null_mut();
         let r = unsafe {
             ngx_http_subrequest(
                 (self as *const Request as *mut Request).cast(),
                 uri_ptr,
-                std::ptr::null_mut(),
+                core::ptr::null_mut(),
                 &mut psr as *mut _,
                 sub_ptr as *mut _,
                 NGX_HTTP_SUBREQUEST_WAITED as _,
@@ -384,7 +383,7 @@ impl Request {
          * allocate fake request body to avoid attempts to read it and to make
          * sure real body file (if already read) won't be closed by upstream
          */
-        sr.request_body = self.pool().alloc(std::mem::size_of::<ngx_http_request_body_t>()) as *mut _;
+        sr.request_body = self.pool().alloc(core::mem::size_of::<ngx_http_request_body_t>()) as *mut _;
 
         if sr.request_body.is_null() {
             return Status::NGX_ERROR;
@@ -710,7 +709,8 @@ impl fmt::Display for InvalidMethod {
     }
 }
 
-impl Error for InvalidMethod {}
+#[cfg(feature = "std")]
+impl std::error::Error for InvalidMethod {}
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 enum MethodInner {
