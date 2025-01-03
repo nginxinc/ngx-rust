@@ -48,3 +48,4 @@ maintenance = { status = "experimental" }
 
 [dev-dependencies]
 target-triple = "0.1.2"
+ngx = { path ="./", features = ["test_util"] }
