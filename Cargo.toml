@@ -25,10 +25,16 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-nginx-sys = { path = "nginx-sys", version = "0.5.0"}
+nginx-sys = { path = "nginx-sys", default-features=false, version = "0.5.0"}
 
 [features]
-default = ["vendored"]
+default = ["vendored","std"]
+# Enables the components using memory allocation.
+# If no `std` flag, `alloc` crate is internally used instead. This flag is mainly for `no_std` build.
+alloc = []
+# Enables the components using `std` crate.
+# Currently the only difference to `alloc` flag is `std::error::Error` implementation.
+std = ["alloc"]
 # Build our own copy of the NGINX by default.
 # This could be disabled with `--no-default-features` to minimize the dependency tree
 # when building against an existing copy of the NGINX with the NGX_OBJS variable.
