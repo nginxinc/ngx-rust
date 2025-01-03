@@ -25,7 +25,7 @@ impl InvalidHTTPStatusCode {
 
 impl fmt::Display for InvalidHTTPStatusCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str("invalid status code".to_string().as_str())
+        f.write_str("invalid status code")
     }
 }
 
