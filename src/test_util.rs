@@ -86,6 +86,14 @@ pub struct Nginx {
     http_uwsgi_temp_path: PathBuf,
     http_scgi_temp_path: PathBuf,
     // here all path are absolute
+    status: Status,
+}
+
+#[derive(PartialEq, Eq)]
+enum Status {
+    Unknown,
+    Running,
+    Stopped,
 }
 
 /// nginx harness builder
@@ -179,6 +187,7 @@ impl NginxBuilder {
             http_fastcgi_temp_path,
             http_uwsgi_temp_path,
             http_scgi_temp_path,
+            status: Status::Unknown,
         }
     }
 }
@@ -202,12 +211,19 @@ impl Nginx {
 
     /// complete stop the nginx binary
     pub fn stop(&mut self) -> Result<Output> {
+        self.status = Status::Stopped;
         self.cmd(&["-s", "stop"])
     }
 
     /// start the nginx binary
     pub fn start(&mut self) -> Result<Output> {
-        self.cmd(&[])
+        let output = self.cmd(&[]);
+        if let Ok(output) = &output {
+            if output.status.success() {
+                self.status = Status::Running;
+            }
+        }
+        output
     }
 
     /// make sure we stop existing nginx and start new master process
@@ -334,5 +350,14 @@ impl Nginx {
     /// get scgi temp file path
     pub fn http_scgi_temp_path(&self) -> &Path {
         &self.http_scgi_temp_path
+    }
+}
+
+impl Drop for Nginx {
+    fn drop(&mut self) {
+        // exec stop if running or unknown
+        if self.status != Status::Stopped {
+            let _ = self.stop();
+        }
     }
 }
