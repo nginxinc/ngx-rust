@@ -88,6 +88,12 @@ fn generate_binding(nginx_build_dir: PathBuf) {
 
     print_cargo_metadata(&includes).expect("cargo dependency metadata");
 
+    // bindgen targets the latest known stable by default
+    let rust_target: bindgen::RustTarget = env::var("CARGO_PKG_RUST_VERSION")
+        .expect("rust-version set in Cargo.toml")
+        .parse()
+        .expect("rust-version is valid and supported by bindgen");
+
     let bindings = bindgen::Builder::default()
         // Bindings will not compile on Linux without block listing this item
         // It is worth investigating why this is
@@ -97,6 +103,7 @@ fn generate_binding(nginx_build_dir: PathBuf) {
         .header("build/wrapper.h")
         .clang_args(clang_args)
         .layout_tests(false)
+        .rust_target(rust_target)
         .use_core()
         .generate()
         .expect("Unable to generate bindings");
