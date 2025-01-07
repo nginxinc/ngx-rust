@@ -32,11 +32,13 @@
 //! # now you can use dynamic modules with the NGINX
 //! ```
 
-// support both std and no_std
-#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
+// support both std and no_std
+#![no_std]
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
 /// The core module.
 ///
