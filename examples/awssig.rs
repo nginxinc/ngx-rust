@@ -1,14 +1,10 @@
-use std::ffi::{c_char, c_void};
 use std::ptr::addr_of;
 
 use http::HeaderMap;
 use ngx::core;
-use ngx::ffi::{
-    nginx_version, ngx_array_push, ngx_command_t, ngx_conf_t, ngx_http_core_module, ngx_http_handler_pt,
-    ngx_http_module_t, ngx_http_phases_NGX_HTTP_PRECONTENT_PHASE, ngx_int_t, ngx_module_t, ngx_str_t, ngx_uint_t,
-    NGX_CONF_TAKE1, NGX_HTTP_LOC_CONF, NGX_HTTP_MODULE, NGX_HTTP_SRV_CONF, NGX_RS_HTTP_LOC_CONF_OFFSET,
-    NGX_RS_MODULE_SIGNATURE,
-};
+use ngx::core::prelude::*;
+use ngx::ffi::{ngx_array_push, NGX_RS_MODULE_SIGNATURE};
+use ngx::http::prelude::*;
 use ngx::http::*;
 use ngx::{http_request_handler, ngx_log_debug_http, ngx_null_command, ngx_string};
 
@@ -22,8 +18,7 @@ impl HTTPModule for Module {
     unsafe extern "C" fn postconfiguration(cf: *mut ngx_conf_t) -> ngx_int_t {
         let cmcf = ngx_http_conf_get_module_main_conf(cf, &*addr_of!(ngx_http_core_module));
 
-        let h = ngx_array_push(&mut (*cmcf).phases[ngx_http_phases_NGX_HTTP_PRECONTENT_PHASE as usize].handlers)
-            as *mut ngx_http_handler_pt;
+        let h = ngx_array_push(&mut (*cmcf).phases[NGX_HTTP_PRECONTENT_PHASE].handlers) as *mut ngx_http_handler_pt;
         if h.is_null() {
             return core::Status::NGX_ERROR.into();
         }
@@ -47,7 +42,7 @@ static mut NGX_HTTP_AWSSIGV4_COMMANDS: [ngx_command_t; 6] = [
         name: ngx_string!("awssigv4"),
         type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
         set: Some(ngx_http_awssigv4_commands_set_enable),
-        conf: NGX_RS_HTTP_LOC_CONF_OFFSET,
+        conf: NGX_HTTP_LOC_CONF_OFFSET,
         offset: 0,
         post: std::ptr::null_mut(),
     },
@@ -55,7 +50,7 @@ static mut NGX_HTTP_AWSSIGV4_COMMANDS: [ngx_command_t; 6] = [
         name: ngx_string!("awssigv4_access_key"),
         type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
         set: Some(ngx_http_awssigv4_commands_set_access_key),
-        conf: NGX_RS_HTTP_LOC_CONF_OFFSET,
+        conf: NGX_HTTP_LOC_CONF_OFFSET,
         offset: 0,
         post: std::ptr::null_mut(),
     },
@@ -63,7 +58,7 @@ static mut NGX_HTTP_AWSSIGV4_COMMANDS: [ngx_command_t; 6] = [
         name: ngx_string!("awssigv4_secret_key"),
         type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
         set: Some(ngx_http_awssigv4_commands_set_secret_key),
-        conf: NGX_RS_HTTP_LOC_CONF_OFFSET,
+        conf: NGX_HTTP_LOC_CONF_OFFSET,
         offset: 0,
         post: std::ptr::null_mut(),
     },
@@ -71,7 +66,7 @@ static mut NGX_HTTP_AWSSIGV4_COMMANDS: [ngx_command_t; 6] = [
         name: ngx_string!("awssigv4_s3_bucket"),
         type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
         set: Some(ngx_http_awssigv4_commands_set_s3_bucket),
-        conf: NGX_RS_HTTP_LOC_CONF_OFFSET,
+        conf: NGX_HTTP_LOC_CONF_OFFSET,
         offset: 0,
         post: std::ptr::null_mut(),
     },
@@ -79,7 +74,7 @@ static mut NGX_HTTP_AWSSIGV4_COMMANDS: [ngx_command_t; 6] = [
         name: ngx_string!("awssigv4_s3_endpoint"),
         type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
         set: Some(ngx_http_awssigv4_commands_set_s3_endpoint),
-        conf: NGX_RS_HTTP_LOC_CONF_OFFSET,
+        conf: NGX_HTTP_LOC_CONF_OFFSET,
         offset: 0,
         post: std::ptr::null_mut(),
     },
