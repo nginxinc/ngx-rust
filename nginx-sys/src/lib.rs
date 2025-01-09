@@ -174,6 +174,39 @@ impl TryFrom<ngx_str_t> for &str {
     }
 }
 
+impl ngx_module_t {
+    /// Create a new `ngx_module_t` instance with default values.
+    pub const fn default() -> Self {
+        Self {
+            ctx_index: ngx_uint_t::MAX,
+            index: ngx_uint_t::MAX,
+            name: core::ptr::null_mut(),
+            spare0: 0,
+            spare1: 0,
+            version: nginx_version as ngx_uint_t,
+            signature: NGX_RS_MODULE_SIGNATURE.as_ptr(),
+            ctx: core::ptr::null_mut(),
+            commands: core::ptr::null_mut(),
+            type_: 0,
+            init_master: None,
+            init_module: None,
+            init_process: None,
+            init_thread: None,
+            exit_thread: None,
+            exit_process: None,
+            exit_master: None,
+            spare_hook0: 0,
+            spare_hook1: 0,
+            spare_hook2: 0,
+            spare_hook3: 0,
+            spare_hook4: 0,
+            spare_hook5: 0,
+            spare_hook6: 0,
+            spare_hook7: 0,
+        }
+    }
+}
+
 /// Add a key-value pair to an nginx table entry (`ngx_table_elt_t`) in the given nginx memory pool.
 ///
 /// # Arguments

@@ -13,12 +13,11 @@ use std::slice;
 
 use ngx::core::{Pool, Status};
 use ngx::ffi::{
-    nginx_version, ngx_atoi, ngx_command_t, ngx_conf_t, ngx_connection_t, ngx_event_free_peer_pt,
-    ngx_event_get_peer_pt, ngx_http_module_t, ngx_http_upstream_init_peer_pt, ngx_http_upstream_init_pt,
-    ngx_http_upstream_init_round_robin, ngx_http_upstream_module, ngx_http_upstream_srv_conf_t, ngx_http_upstream_t,
-    ngx_int_t, ngx_module_t, ngx_peer_connection_t, ngx_str_t, ngx_uint_t, NGX_CONF_NOARGS, NGX_CONF_TAKE1,
-    NGX_CONF_UNSET, NGX_ERROR, NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF, NGX_LOG_EMERG, NGX_RS_HTTP_SRV_CONF_OFFSET,
-    NGX_RS_MODULE_SIGNATURE,
+    ngx_atoi, ngx_command_t, ngx_conf_t, ngx_connection_t, ngx_event_free_peer_pt, ngx_event_get_peer_pt,
+    ngx_http_module_t, ngx_http_upstream_init_peer_pt, ngx_http_upstream_init_pt, ngx_http_upstream_init_round_robin,
+    ngx_http_upstream_module, ngx_http_upstream_srv_conf_t, ngx_http_upstream_t, ngx_int_t, ngx_module_t,
+    ngx_peer_connection_t, ngx_str_t, ngx_uint_t, NGX_CONF_NOARGS, NGX_CONF_TAKE1, NGX_CONF_UNSET, NGX_ERROR,
+    NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF, NGX_LOG_EMERG, NGX_RS_HTTP_SRV_CONF_OFFSET,
 };
 use ngx::http::{
     ngx_http_conf_get_module_srv_conf, ngx_http_conf_upstream_srv_conf_immutable,
@@ -110,34 +109,10 @@ ngx::ngx_modules!(ngx_http_upstream_custom_module);
 #[allow(non_upper_case_globals)]
 #[cfg_attr(not(feature = "export-modules"), no_mangle)]
 pub static mut ngx_http_upstream_custom_module: ngx_module_t = ngx_module_t {
-    ctx_index: ngx_uint_t::MAX,
-    index: ngx_uint_t::MAX,
-    name: std::ptr::null_mut(),
-    spare0: 0,
-    spare1: 0,
-    version: nginx_version as ngx_uint_t,
-    signature: NGX_RS_MODULE_SIGNATURE.as_ptr() as *const c_char,
-
-    ctx: &NGX_HTTP_UPSTREAM_CUSTOM_CTX as *const _ as *mut _,
+    ctx: std::ptr::addr_of!(NGX_HTTP_UPSTREAM_CUSTOM_CTX) as _,
     commands: unsafe { &NGX_HTTP_UPSTREAM_CUSTOM_COMMANDS[0] as *const _ as *mut _ },
-    type_: NGX_HTTP_MODULE as ngx_uint_t,
-
-    init_master: None,
-    init_module: None,
-    init_process: None,
-    init_thread: None,
-    exit_thread: None,
-    exit_process: None,
-    exit_master: None,
-
-    spare_hook0: 0,
-    spare_hook1: 0,
-    spare_hook2: 0,
-    spare_hook3: 0,
-    spare_hook4: 0,
-    spare_hook5: 0,
-    spare_hook6: 0,
-    spare_hook7: 0,
+    type_: NGX_HTTP_MODULE as _,
+    ..ngx_module_t::default()
 };
 
 // http_upstream_init_custom_peer

@@ -1,11 +1,11 @@
-use std::ffi::{c_char, c_int, c_void};
+use std::ffi::{c_int, c_void};
 use std::ptr::addr_of;
 
 use ngx::core;
 use ngx::ffi::{
-    in_port_t, nginx_version, ngx_conf_t, ngx_connection_local_sockaddr, ngx_http_add_variable, ngx_http_module_t,
-    ngx_http_variable_t, ngx_inet_get_port, ngx_int_t, ngx_module_t, ngx_sock_ntop, ngx_str_t, ngx_uint_t,
-    ngx_variable_value_t, sockaddr, sockaddr_storage, INET_ADDRSTRLEN, NGX_HTTP_MODULE, NGX_RS_MODULE_SIGNATURE,
+    in_port_t, ngx_conf_t, ngx_connection_local_sockaddr, ngx_http_add_variable, ngx_http_module_t,
+    ngx_http_variable_t, ngx_inet_get_port, ngx_int_t, ngx_module_t, ngx_sock_ntop, ngx_str_t, ngx_variable_value_t,
+    sockaddr, sockaddr_storage, INET_ADDRSTRLEN, NGX_HTTP_MODULE,
 };
 use ngx::http::{self, HTTPModule};
 use ngx::{http_variable_get, ngx_http_null_variable, ngx_log_debug_http, ngx_null_string, ngx_string};
@@ -96,33 +96,10 @@ ngx::ngx_modules!(ngx_http_orig_dst_module);
 #[allow(non_upper_case_globals)]
 #[cfg_attr(not(feature = "export-modules"), no_mangle)]
 pub static mut ngx_http_orig_dst_module: ngx_module_t = ngx_module_t {
-    ctx_index: ngx_uint_t::MAX,
-    index: ngx_uint_t::MAX,
-    name: std::ptr::null_mut(),
-    spare0: 0,
-    spare1: 0,
-    version: nginx_version as ngx_uint_t,
-    signature: NGX_RS_MODULE_SIGNATURE.as_ptr() as *const c_char,
-    ctx: &NGX_HTTP_ORIG_DST_MODULE_CTX as *const _ as *mut _,
+    ctx: std::ptr::addr_of!(NGX_HTTP_ORIG_DST_MODULE_CTX) as _,
     commands: std::ptr::null_mut(),
-    type_: NGX_HTTP_MODULE as ngx_uint_t,
-
-    init_master: None,
-    init_module: None,
-    init_process: None,
-    init_thread: None,
-    exit_thread: None,
-    exit_process: None,
-    exit_master: None,
-
-    spare_hook0: 0,
-    spare_hook1: 0,
-    spare_hook2: 0,
-    spare_hook3: 0,
-    spare_hook4: 0,
-    spare_hook5: 0,
-    spare_hook6: 0,
-    spare_hook7: 0,
+    type_: NGX_HTTP_MODULE as _,
+    ..ngx_module_t::default()
 };
 
 static mut NGX_HTTP_ORIG_DST_VARS: [ngx_http_variable_t; 3] = [
