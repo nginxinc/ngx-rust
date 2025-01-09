@@ -40,3 +40,32 @@ pub use crate::ffi::NGX_MAIN_CONF;
 
 pub use crate::ffi::ngx_cycle;
 pub use crate::ffi::ngx_posted_events;
+
+/// Default module value for the `ngx_module_t` struct.
+pub const NGX_RS_MODULE_V1: ngx_module_t = ngx_module_t {
+    ctx_index: ngx_uint_t::MAX,
+    index: ngx_uint_t::MAX,
+    name: std::ptr::null_mut(),
+    spare0: 0,
+    spare1: 0,
+    version: crate::ffi::nginx_version as ngx_uint_t,
+    signature: crate::ffi::NGX_RS_MODULE_SIGNATURE.as_ptr() as *const c_char,
+    ctx: std::ptr::null_mut(),
+    commands: std::ptr::null_mut(),
+    type_: 0,
+    init_master: None,
+    init_module: None,
+    init_process: None,
+    init_thread: None,
+    exit_thread: None,
+    exit_process: None,
+    exit_master: None,
+    spare_hook0: 0,
+    spare_hook1: 0,
+    spare_hook2: 0,
+    spare_hook3: 0,
+    spare_hook4: 0,
+    spare_hook5: 0,
+    spare_hook6: 0,
+    spare_hook7: 0,
+};

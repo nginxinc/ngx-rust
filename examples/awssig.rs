@@ -3,7 +3,7 @@ use std::ptr::addr_of;
 use http::HeaderMap;
 use ngx::core;
 use ngx::core::prelude::*;
-use ngx::ffi::{ngx_array_push, NGX_RS_MODULE_SIGNATURE};
+use ngx::ffi::ngx_array_push;
 use ngx::http::prelude::*;
 use ngx::http::*;
 use ngx::{http_request_handler, ngx_log_debug_http, ngx_null_command, ngx_string};
@@ -37,50 +37,6 @@ struct ModuleConfig {
     s3_endpoint: String,
 }
 
-static mut NGX_HTTP_AWSSIGV4_COMMANDS: [ngx_command_t; 6] = [
-    ngx_command_t {
-        name: ngx_string!("awssigv4"),
-        type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
-        set: Some(ngx_http_awssigv4_commands_set_enable),
-        conf: NGX_HTTP_LOC_CONF_OFFSET,
-        offset: 0,
-        post: std::ptr::null_mut(),
-    },
-    ngx_command_t {
-        name: ngx_string!("awssigv4_access_key"),
-        type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
-        set: Some(ngx_http_awssigv4_commands_set_access_key),
-        conf: NGX_HTTP_LOC_CONF_OFFSET,
-        offset: 0,
-        post: std::ptr::null_mut(),
-    },
-    ngx_command_t {
-        name: ngx_string!("awssigv4_secret_key"),
-        type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
-        set: Some(ngx_http_awssigv4_commands_set_secret_key),
-        conf: NGX_HTTP_LOC_CONF_OFFSET,
-        offset: 0,
-        post: std::ptr::null_mut(),
-    },
-    ngx_command_t {
-        name: ngx_string!("awssigv4_s3_bucket"),
-        type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
-        set: Some(ngx_http_awssigv4_commands_set_s3_bucket),
-        conf: NGX_HTTP_LOC_CONF_OFFSET,
-        offset: 0,
-        post: std::ptr::null_mut(),
-    },
-    ngx_command_t {
-        name: ngx_string!("awssigv4_s3_endpoint"),
-        type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
-        set: Some(ngx_http_awssigv4_commands_set_s3_endpoint),
-        conf: NGX_HTTP_LOC_CONF_OFFSET,
-        offset: 0,
-        post: std::ptr::null_mut(),
-    },
-    ngx_null_command!(),
-];
-
 static NGX_HTTP_AWSSIGV4_MODULE_CTX: ngx_http_module_t = ngx_http_module_t {
     preconfiguration: Some(Module::preconfiguration),
     postconfiguration: Some(Module::postconfiguration),
@@ -101,34 +57,54 @@ ngx::ngx_modules!(ngx_http_awssigv4_module);
 #[allow(non_upper_case_globals)]
 #[cfg_attr(not(feature = "export-modules"), no_mangle)]
 pub static mut ngx_http_awssigv4_module: ngx_module_t = ngx_module_t {
-    ctx_index: ngx_uint_t::MAX,
-    index: ngx_uint_t::MAX,
-    name: std::ptr::null_mut(),
-    spare0: 0,
-    spare1: 0,
-    version: nginx_version as ngx_uint_t,
-    signature: NGX_RS_MODULE_SIGNATURE.as_ptr() as *const c_char,
-
-    ctx: &NGX_HTTP_AWSSIGV4_MODULE_CTX as *const _ as *mut _,
-    commands: unsafe { &NGX_HTTP_AWSSIGV4_COMMANDS[0] as *const _ as *mut _ },
-    type_: NGX_HTTP_MODULE as ngx_uint_t,
-
-    init_master: None,
-    init_module: None,
-    init_process: None,
-    init_thread: None,
-    exit_thread: None,
-    exit_process: None,
-    exit_master: None,
-
-    spare_hook0: 0,
-    spare_hook1: 0,
-    spare_hook2: 0,
-    spare_hook3: 0,
-    spare_hook4: 0,
-    spare_hook5: 0,
-    spare_hook6: 0,
-    spare_hook7: 0,
+    ctx: std::ptr::addr_of!(NGX_HTTP_AWSSIGV4_MODULE_CTX) as _,
+    commands: [
+        ngx_command_t {
+            name: ngx_string!("awssigv4"),
+            type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as _,
+            set: Some(ngx_http_awssigv4_commands_set_enable),
+            conf: NGX_HTTP_LOC_CONF_OFFSET,
+            offset: 0,
+            post: std::ptr::null_mut(),
+        },
+        ngx_command_t {
+            name: ngx_string!("awssigv4_access_key"),
+            type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as _,
+            set: Some(ngx_http_awssigv4_commands_set_access_key),
+            conf: NGX_HTTP_LOC_CONF_OFFSET,
+            offset: 0,
+            post: std::ptr::null_mut(),
+        },
+        ngx_command_t {
+            name: ngx_string!("awssigv4_secret_key"),
+            type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as _,
+            set: Some(ngx_http_awssigv4_commands_set_secret_key),
+            conf: NGX_HTTP_LOC_CONF_OFFSET,
+            offset: 0,
+            post: std::ptr::null_mut(),
+        },
+        ngx_command_t {
+            name: ngx_string!("awssigv4_s3_bucket"),
+            type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as _,
+            set: Some(ngx_http_awssigv4_commands_set_s3_bucket),
+            conf: NGX_HTTP_LOC_CONF_OFFSET,
+            offset: 0,
+            post: std::ptr::null_mut(),
+        },
+        ngx_command_t {
+            name: ngx_string!("awssigv4_s3_endpoint"),
+            type_: (NGX_HTTP_LOC_CONF | NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1) as _,
+            set: Some(ngx_http_awssigv4_commands_set_s3_endpoint),
+            conf: NGX_HTTP_LOC_CONF_OFFSET,
+            offset: 0,
+            post: std::ptr::null_mut(),
+        },
+        ngx_null_command!(),
+    ]
+    .as_ptr()
+    .cast_mut(),
+    type_: NGX_HTTP_MODULE as _,
+    ..NGX_RS_MODULE_V1
 };
 
 impl Merge for ModuleConfig {

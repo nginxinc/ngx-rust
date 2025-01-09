@@ -5,7 +5,7 @@ use ngx::core;
 use ngx::core::prelude::*;
 use ngx::ffi::{
     in_port_t, ngx_connection_local_sockaddr, ngx_inet_get_port, ngx_sock_ntop, sockaddr, sockaddr_storage,
-    INET_ADDRSTRLEN, NGX_RS_MODULE_SIGNATURE,
+    INET_ADDRSTRLEN,
 };
 use ngx::http::prelude::*;
 use ngx::http::{self, HTTPModule};
@@ -97,33 +97,10 @@ ngx::ngx_modules!(ngx_http_orig_dst_module);
 #[allow(non_upper_case_globals)]
 #[cfg_attr(not(feature = "export-modules"), no_mangle)]
 pub static mut ngx_http_orig_dst_module: ngx_module_t = ngx_module_t {
-    ctx_index: ngx_uint_t::MAX,
-    index: ngx_uint_t::MAX,
-    name: std::ptr::null_mut(),
-    spare0: 0,
-    spare1: 0,
-    version: nginx_version as ngx_uint_t,
-    signature: NGX_RS_MODULE_SIGNATURE.as_ptr() as *const c_char,
-    ctx: &NGX_HTTP_ORIG_DST_MODULE_CTX as *const _ as *mut _,
+    ctx: std::ptr::addr_of!(NGX_HTTP_ORIG_DST_MODULE_CTX) as _,
     commands: std::ptr::null_mut(),
-    type_: NGX_HTTP_MODULE as ngx_uint_t,
-
-    init_master: None,
-    init_module: None,
-    init_process: None,
-    init_thread: None,
-    exit_thread: None,
-    exit_process: None,
-    exit_master: None,
-
-    spare_hook0: 0,
-    spare_hook1: 0,
-    spare_hook2: 0,
-    spare_hook3: 0,
-    spare_hook4: 0,
-    spare_hook5: 0,
-    spare_hook6: 0,
-    spare_hook7: 0,
+    type_: NGX_HTTP_MODULE as _,
+    ..NGX_RS_MODULE_V1
 };
 
 static mut NGX_HTTP_ORIG_DST_VARS: [ngx_http_variable_t; 3] = [
