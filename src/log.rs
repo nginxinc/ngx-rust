@@ -2,7 +2,7 @@ use core::cmp;
 use core::fmt::{self, Write};
 use core::mem::MaybeUninit;
 
-use crate::ffi::NGX_MAX_ERROR_STR;
+use crate::ffi::{self, ngx_err_t, ngx_log_t, ngx_uint_t, NGX_MAX_ERROR_STR};
 
 /// Size of the static buffer used to format log messages.
 ///
@@ -35,6 +35,41 @@ pub fn write_fmt<'a>(buf: &'a mut [MaybeUninit<u8>], args: fmt::Arguments<'_>) -
     }
 }
 
+/// Writes the provided buffer to the nginx logger at a specified level.
+///
+/// # Safety
+/// Requires a valid log pointer.
+#[inline]
+pub unsafe fn log_error(level: ngx_uint_t, log: *mut ngx_log_t, err: ngx_err_t, buf: &[u8]) {
+    unsafe {
+        #[cfg(ngx_feature = "have_variadic_macros")]
+        ffi::ngx_log_error_core(level, log, err, c"%*s".as_ptr(), buf.len(), buf.as_ptr());
+        #[cfg(not(ngx_feature = "have_variadic_macros"))]
+        ffi::ngx_log_error(level, log, err, c"%*s".as_ptr(), buf.len(), buf.as_ptr());
+    }
+}
+
+/// Writes the provided buffer to the nginx logger at the debug level.
+///
+/// # Safety
+/// Requires a valid log pointer.
+#[inline]
+pub unsafe fn log_debug(log: *mut ngx_log_t, err: ngx_err_t, buf: &[u8]) {
+    unsafe {
+        #[cfg(ngx_feature = "have_variadic_macros")]
+        ffi::ngx_log_error_core(
+            ffi::NGX_LOG_DEBUG as _,
+            log,
+            err,
+            c"%*s".as_ptr(),
+            buf.len(),
+            buf.as_ptr(),
+        );
+        #[cfg(not(ngx_feature = "have_variadic_macros"))]
+        ffi::ngx_log_debug_core(log, err, c"%*s".as_ptr(), buf.len(), buf.as_ptr());
+    }
+}
+
 /// Write to logger at a specified level.
 ///
 /// See [Logging](https://nginx.org/en/docs/dev/development_guide.html#logging)
@@ -47,9 +82,7 @@ macro_rules! ngx_log_error {
         if level < unsafe { (*log).log_level } {
             let mut buf = [const { ::core::mem::MaybeUninit::<u8>::uninit() }; $crate::log::LOG_BUFFER_SIZE];
             let message = $crate::log::write_fmt(&mut buf, format_args!($($arg)+));
-            unsafe {
-                $crate::ffi::ngx_log_error_core(level, log, 0, c"%*s".as_ptr(), message.len(), message.as_ptr());
-            }
+            unsafe { $crate::log::log_error(level, log, 0, message) };
         }
     }
 }
@@ -76,12 +109,9 @@ macro_rules! ngx_log_debug {
     ( mask: $mask:expr, $log:expr, $($arg:tt)+ ) => {
         let log = $log;
         if $crate::log::check_mask($mask, unsafe { (*log).log_level }) {
-            let level = $crate::ffi::NGX_LOG_DEBUG as $crate::ffi::ngx_uint_t;
             let mut buf = [const { ::core::mem::MaybeUninit::<u8>::uninit() }; $crate::log::LOG_BUFFER_SIZE];
             let message = $crate::log::write_fmt(&mut buf, format_args!($($arg)+));
-            unsafe {
-                $crate::ffi::ngx_log_error_core(level, log, 0, c"%*s".as_ptr(), message.len(), message.as_ptr());
-            }
+            unsafe { $crate::log::log_debug(log, 0, message) };
         }
     };
     ( $log:expr, $($arg:tt)+ ) => {
