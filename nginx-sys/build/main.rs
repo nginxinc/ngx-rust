@@ -25,6 +25,7 @@ const NGX_CONF_FEATURES: &[&str] = &[
     "have_epollrdhup",
     "have_file_aio",
     "have_kqueue",
+    "have_variadic_macros",
     "http_cache",
     "http_dav",
     "http_gzip",
@@ -254,7 +255,7 @@ fn expand_definitions<T: AsRef<Path>>(includes: &[T]) -> Result<Vec<u8>, Box<dyn
         writer,
         "
 #include <ngx_config.h>
-#include <nginx.h>
+#include <ngx_core.h>
 
 RUST_CONF_NGINX_BUILD=NGINX_VER_BUILD
 RUST_CONF_NGINX_VERSION=NGINX_VER
