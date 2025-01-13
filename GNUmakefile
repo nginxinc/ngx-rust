@@ -16,7 +16,7 @@ DOCKER_BUILD_FLAGS ?= --load
 COMMITSAR_DOCKER   := $(DOCKER) run --tty --rm --workdir /src -v "$(CURDIR):/src" aevea/commitsar
 COMMITSAR		   ?= $(shell command -v commitsar 2> /dev/null)
 PROJECT_NAME       ?= ngx-rust
-GITHUB_REPOSITORY  ?= nginxinc/$(PROJECT_NAME)
+GITHUB_REPOSITORY  ?= nginx/$(PROJECT_NAME)
 SRC_REPO           := https://github.com/$(GITHUB_REPOSITORY)
 
 RELEASE_BUILD_FLAGS ?= --quiet --release

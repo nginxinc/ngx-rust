@@ -99,7 +99,7 @@ The following embedded variables are provided:
 
 1. Clone the git repository.
   ```
-  git clone git@github.com:nginxinc/ngx-rust.git
+  git clone git@github.com:nginx/ngx-rust.git
   ```
 
 2. Compile the module from the cloned repo.
@@ -197,7 +197,7 @@ http {
 
 1. Clone the git repository.
   ```
-  git clone git@github.com:nginxinc/ngx-rust.git
+  git clone git@github.com:nginx/ngx-rust.git
   ```
 
 2. Compile the module from the cloned repo.

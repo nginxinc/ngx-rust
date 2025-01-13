@@ -153,7 +153,7 @@ unsafe impl Send for EventData {}
 unsafe impl Sync for EventData {}
 
 // same as ngx_post_event
-// source: https://github.com/nginxinc/ngx-rust/pull/31/files#diff-132330bb775bed17fb9990ec2b56e6c52e6a9e56d62f2114fade95e4decdba08R80-R90
+// source: https://github.com/nginx/ngx-rust/pull/31/files#diff-132330bb775bed17fb9990ec2b56e6c52e6a9e56d62f2114fade95e4decdba08R80-R90
 unsafe fn post_event(event: *mut ngx_event_t, queue: *mut ngx_queue_s) {
     let event = &mut (*event);
     if event.posted() == 0 {
