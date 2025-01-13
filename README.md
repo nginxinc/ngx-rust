@@ -1,7 +1,7 @@
-[![Rust](https://github.com/nginxinc/ngx-rust/actions/workflows/ci.yaml/badge.svg)](https://github.com/nginxinc/ngx-rust/actions/workflows/ci.yaml)
+[![Rust](https://github.com/nginx/ngx-rust/actions/workflows/ci.yaml/badge.svg)](https://github.com/nginx/ngx-rust/actions/workflows/ci.yaml)
 [![crates.io](https://img.shields.io/crates/v/ngx.svg)](https://crates.io/crates/ngx)
 [![Project Status: Concept – Minimal or no implementation has been done yet, or the repository is only intended to be a limited example, demo, or proof-of-concept.](https://www.repostatus.org/badges/latest/concept.svg)](https://www.repostatus.org/#concept)
-[![Community Support](https://badgen.net/badge/support/community/cyan?icon=awesome)](https://github.com/nginxinc/ngx-rust/discussions)
+[![Community Support](https://badgen.net/badge/support/community/cyan?icon=awesome)](https://github.com/nginx/ngx-rust/discussions)
 
 
 ## Project status
