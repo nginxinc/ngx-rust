@@ -5,7 +5,19 @@
 
 version: 2
 updates:
+
   - package-ecosystem: "cargo"
     directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+    # semver-incompatible updates will be handled manually
+    versioning-strategy: "lockfile-only"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: "weekly"
