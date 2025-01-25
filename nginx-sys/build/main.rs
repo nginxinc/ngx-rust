@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 #[cfg(feature = "vendored")]
 mod vendored;
 
-const ENV_VARS_TRIGGERING_RECOMPILE: &[&str] = &["OUT_DIR", "NGX_OBJS", "NGINX_SOURCE_DIR"];
+const ENV_VARS_TRIGGERING_RECOMPILE: &[&str] = &["OUT_DIR", "NGINX_BUILD_DIR", "NGINX_SOURCE_DIR"];
 
 /// The feature flags set by the nginx configuration script.
 ///
@@ -89,7 +89,7 @@ impl NginxSource {
     }
 
     pub fn from_env() -> Self {
-        match (env::var_os("NGINX_SOURCE_DIR"), env::var_os("NGX_OBJS")) {
+        match (env::var_os("NGINX_SOURCE_DIR"), env::var_os("NGINX_BUILD_DIR")) {
             (Some(source_dir), Some(build_dir)) => NginxSource::new(source_dir, build_dir),
             (Some(source_dir), None) => Self::from_source_dir(source_dir),
             (None, Some(build_dir)) => Self::from_build_dir(build_dir),
@@ -120,7 +120,7 @@ impl NginxSource {
 
     #[cfg(not(feature = "vendored"))]
     pub fn from_vendored() -> Self {
-        panic!("\"nginx-sys/vendored\" feature is disabled and neither NGINX_SOURCE_DIR nor NGX_OBJS is set");
+        panic!("\"nginx-sys/vendored\" feature is disabled and neither NGINX_SOURCE_DIR nor NGINX_BUILD_DIR is set");
     }
 
     fn check_source_dir(source_dir: impl AsRef<Path>) -> Result<PathBuf, BoxError> {
@@ -140,7 +140,7 @@ impl NginxSource {
             Ok(path) if path.join("ngx_auto_config.h").is_file() => Ok(path),
             Err(err) => Err(format!("Invalid nginx build directory: {:?}. {}", build_dir.as_ref(), err).into()),
             _ => Err(format!(
-                "Invalid NGINX build directory: {:?}. NGX_OBJS is not specified or contains invalid value.",
+                "Invalid NGINX build directory: {:?}. NGINX_BUILD_DIR is not specified or contains invalid value.",
                 build_dir.as_ref()
             )
             .into()),
