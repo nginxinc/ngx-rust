@@ -9,7 +9,7 @@ use ngx::ffi::{
     ngx_array_push, ngx_command_t, ngx_conf_t, ngx_cycle, ngx_event_t, ngx_http_core_module, ngx_http_core_run_phases,
     ngx_http_handler_pt, ngx_http_module_t, ngx_http_phases_NGX_HTTP_ACCESS_PHASE, ngx_http_request_t, ngx_int_t,
     ngx_module_t, ngx_posted_events, ngx_queue_s, ngx_str_t, ngx_uint_t, NGX_CONF_TAKE1, NGX_HTTP_LOC_CONF,
-    NGX_HTTP_MODULE, NGX_RS_HTTP_LOC_CONF_OFFSET,
+    NGX_HTTP_LOC_CONF_OFFSET, NGX_HTTP_MODULE,
 };
 use ngx::http::{self, HTTPModule, MergeConfigError};
 use ngx::{http_request_handler, ngx_log_debug_http, ngx_null_command, ngx_string};
@@ -59,7 +59,7 @@ static mut NGX_HTTP_ASYNC_COMMANDS: [ngx_command_t; 2] = [
         name: ngx_string!("async"),
         type_: (NGX_HTTP_LOC_CONF | NGX_CONF_TAKE1) as ngx_uint_t,
         set: Some(ngx_http_async_commands_set_enable),
-        conf: NGX_RS_HTTP_LOC_CONF_OFFSET,
+        conf: NGX_HTTP_LOC_CONF_OFFSET,
         offset: 0,
         post: std::ptr::null_mut(),
     },

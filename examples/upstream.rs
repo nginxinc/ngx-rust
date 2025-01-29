@@ -17,7 +17,7 @@ use ngx::ffi::{
     ngx_http_module_t, ngx_http_upstream_init_peer_pt, ngx_http_upstream_init_pt, ngx_http_upstream_init_round_robin,
     ngx_http_upstream_module, ngx_http_upstream_srv_conf_t, ngx_http_upstream_t, ngx_int_t, ngx_module_t,
     ngx_peer_connection_t, ngx_str_t, ngx_uint_t, NGX_CONF_NOARGS, NGX_CONF_TAKE1, NGX_CONF_UNSET, NGX_ERROR,
-    NGX_HTTP_MODULE, NGX_HTTP_UPS_CONF, NGX_LOG_EMERG, NGX_RS_HTTP_SRV_CONF_OFFSET,
+    NGX_HTTP_MODULE, NGX_HTTP_SRV_CONF_OFFSET, NGX_HTTP_UPS_CONF, NGX_LOG_EMERG,
 };
 use ngx::http::{
     ngx_http_conf_get_module_srv_conf, ngx_http_conf_upstream_srv_conf_immutable,
@@ -93,7 +93,7 @@ static mut NGX_HTTP_UPSTREAM_CUSTOM_COMMANDS: [ngx_command_t; 2] = [
         name: ngx_string!("custom"),
         type_: (NGX_HTTP_UPS_CONF | NGX_CONF_NOARGS | NGX_CONF_TAKE1) as ngx_uint_t,
         set: Some(ngx_http_upstream_commands_set_custom),
-        conf: NGX_RS_HTTP_SRV_CONF_OFFSET,
+        conf: NGX_HTTP_SRV_CONF_OFFSET,
         offset: 0,
         post: std::ptr::null_mut(),
     },
