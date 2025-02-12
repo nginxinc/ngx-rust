@@ -4,7 +4,7 @@
 
 use core::fmt;
 use core::mem::offset_of;
-use core::ptr::copy_nonoverlapping;
+use core::ptr::{self, copy_nonoverlapping};
 use core::slice;
 
 #[doc(hidden)]
@@ -124,6 +124,16 @@ impl ngx_str_t {
         core::str::from_utf8(self.as_bytes()).unwrap()
     }
 
+    /// Creates an empty `ngx_str_t` instance.
+    ///
+    /// This method replaces the `ngx_null_string` C macro.
+    pub const fn empty() -> Self {
+        ngx_str_t {
+            len: 0,
+            data: ptr::null_mut(),
+        }
+    }
+
     /// Create an `ngx_str_t` instance from a byte slice.
     ///
     /// # Safety
@@ -152,6 +162,12 @@ impl ngx_str_t {
             data: str_to_uchar(pool, data),
             len: data.len(),
         }
+    }
+}
+
+impl Default for ngx_str_t {
+    fn default() -> Self {
+        Self::empty()
     }
 }
 
@@ -196,13 +212,13 @@ impl ngx_module_t {
         Self {
             ctx_index: ngx_uint_t::MAX,
             index: ngx_uint_t::MAX,
-            name: core::ptr::null_mut(),
+            name: ptr::null_mut(),
             spare0: 0,
             spare1: 0,
             version: nginx_version as ngx_uint_t,
             signature: NGX_RS_MODULE_SIGNATURE.as_ptr(),
-            ctx: core::ptr::null_mut(),
-            commands: core::ptr::null_mut(),
+            ctx: ptr::null_mut(),
+            commands: ptr::null_mut(),
             type_: 0,
             init_master: None,
             init_module: None,

@@ -17,7 +17,7 @@ pub use string::*;
 macro_rules! ngx_null_command {
     () => {
         $crate::ffi::ngx_command_t {
-            name: $crate::ngx_null_string!(),
+            name: $crate::ffi::ngx_str_t::empty(),
             type_: 0,
             set: None,
             conf: 0,
