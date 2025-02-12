@@ -6,7 +6,7 @@ use alloc::{borrow::Cow, string::String};
 #[cfg(feature = "std")]
 use std::{borrow::Cow, string::String};
 
-use crate::ffi::*;
+use crate::ffi::{ngx_str_t, u_char};
 
 /// Static string initializer for [`ngx_str_t`].
 ///
@@ -21,19 +21,6 @@ macro_rules! ngx_string {
             data: concat!($s, "\0").as_ptr() as *mut u8,
         }
     }};
-}
-
-/// Static empty string initializer for [`ngx_str_t`].
-///
-/// [`ngx_str_t`]: https://nginx.org/en/docs/dev/development_guide.html#string_overview
-#[macro_export]
-macro_rules! ngx_null_string {
-    () => {
-        $crate::ffi::ngx_str_t {
-            len: 0,
-            data: ::core::ptr::null_mut(),
-        }
-    };
 }
 
 /// Representation of a borrowed [Nginx string].
@@ -100,7 +87,7 @@ impl AsRef<[u8]> for NgxStr {
 
 impl Default for &NgxStr {
     fn default() -> Self {
-        // SAFETY: The null `ngx_str_t` is always a valid Nginx string.
-        unsafe { NgxStr::from_ngx_str(ngx_null_string!()) }
+        // SAFETY: The empty `ngx_str_t` is always a valid Nginx string.
+        unsafe { NgxStr::from_ngx_str(ngx_str_t::default()) }
     }
 }

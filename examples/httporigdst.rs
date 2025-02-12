@@ -8,23 +8,14 @@ use ngx::ffi::{
     sockaddr, sockaddr_storage, INET_ADDRSTRLEN, NGX_HTTP_MODULE,
 };
 use ngx::http::{self, HTTPModule};
-use ngx::{http_variable_get, ngx_log_debug_http, ngx_null_string, ngx_string};
+use ngx::{http_variable_get, ngx_log_debug_http, ngx_string};
 
 const IPV4_STRLEN: usize = INET_ADDRSTRLEN as usize;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct NgxHttpOrigDstCtx {
     orig_dst_addr: ngx_str_t,
     orig_dst_port: ngx_str_t,
-}
-
-impl Default for NgxHttpOrigDstCtx {
-    fn default() -> NgxHttpOrigDstCtx {
-        NgxHttpOrigDstCtx {
-            orig_dst_addr: ngx_null_string!(),
-            orig_dst_port: ngx_null_string!(),
-        }
-    }
 }
 
 impl NgxHttpOrigDstCtx {
