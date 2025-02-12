@@ -2,7 +2,7 @@ ARG NGX_VERSION=1.26.1
 ARG NGX_DEBUG=false
 
 # --- builder: build all examples
-FROM rust:slim-bullseye as build
+FROM rust:slim-bullseye AS build
 ARG NGX_VERSION
 ARG NGX_DEBUG
 WORKDIR /project
