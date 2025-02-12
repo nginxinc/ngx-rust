@@ -8,7 +8,7 @@ use ngx::ffi::{
     sockaddr, sockaddr_storage, INET_ADDRSTRLEN, NGX_HTTP_MODULE,
 };
 use ngx::http::{self, HTTPModule};
-use ngx::{http_variable_get, ngx_http_null_variable, ngx_log_debug_http, ngx_null_string, ngx_string};
+use ngx::{http_variable_get, ngx_log_debug_http, ngx_null_string, ngx_string};
 
 const IPV4_STRLEN: usize = INET_ADDRSTRLEN as usize;
 
@@ -102,7 +102,7 @@ pub static mut ngx_http_orig_dst_module: ngx_module_t = ngx_module_t {
     ..ngx_module_t::default()
 };
 
-static mut NGX_HTTP_ORIG_DST_VARS: [ngx_http_variable_t; 3] = [
+static mut NGX_HTTP_ORIG_DST_VARS: [ngx_http_variable_t; 2] = [
     // ngx_str_t name
     // ngx_http_set_variable_pt set_handler
     // ngx_http_get_variable_pt get_handler
@@ -125,7 +125,6 @@ static mut NGX_HTTP_ORIG_DST_VARS: [ngx_http_variable_t; 3] = [
         flags: 0,
         index: 0,
     },
-    ngx_http_null_variable!(),
 ];
 
 unsafe fn ngx_get_origdst(request: &mut http::Request) -> Result<(String, in_port_t), core::Status> {
@@ -276,9 +275,6 @@ impl HTTPModule for Module {
     // static ngx_int_t ngx_http_orig_dst_add_variables(ngx_conf_t *cf)
     unsafe extern "C" fn preconfiguration(cf: *mut ngx_conf_t) -> ngx_int_t {
         for mut v in NGX_HTTP_ORIG_DST_VARS {
-            if v.name.len == 0 {
-                break;
-            }
             let var = ngx_http_add_variable(cf, &mut v.name, v.flags);
             if var.is_null() {
                 return core::Status::NGX_ERROR.into();
