@@ -6,7 +6,6 @@ use core::str::FromStr;
 use crate::core::*;
 use crate::ffi::*;
 use crate::http::status::*;
-use crate::ngx_null_string;
 
 /// Define a static request handler.
 ///
@@ -229,7 +228,7 @@ impl Request {
         // SAFETY: `ngx_http_complex_value` does not mutate `r` or `val` and guarentees that
         // a valid Nginx string is stored in `value` if it successfully returns.
         unsafe {
-            let mut value = ngx_null_string!();
+            let mut value = ngx_str_t::default();
             if ngx_http_complex_value(r, val, &mut value) != NGX_OK as ngx_int_t {
                 return None;
             }
