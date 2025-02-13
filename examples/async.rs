@@ -12,7 +12,7 @@ use ngx::ffi::{
     NGX_HTTP_LOC_CONF_OFFSET, NGX_HTTP_MODULE,
 };
 use ngx::http::{self, HTTPModule, MergeConfigError};
-use ngx::{http_request_handler, ngx_log_debug_http, ngx_null_command, ngx_string};
+use ngx::{http_request_handler, ngx_log_debug_http, ngx_string};
 use tokio::runtime::Runtime;
 
 struct Module;
@@ -63,7 +63,7 @@ static mut NGX_HTTP_ASYNC_COMMANDS: [ngx_command_t; 2] = [
         offset: 0,
         post: std::ptr::null_mut(),
     },
-    ngx_null_command!(),
+    ngx_command_t::empty(),
 ];
 
 static NGX_HTTP_ASYNC_MODULE_CTX: ngx_http_module_t = ngx_http_module_t {
