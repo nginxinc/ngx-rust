@@ -206,6 +206,25 @@ impl TryFrom<ngx_str_t> for &str {
     }
 }
 
+impl ngx_command_t {
+    /// Creates a new empty [`ngx_command_t`] instance.
+    ///
+    /// This method replaces the `ngx_null_command` C macro. This is typically used to terminate an
+    /// array of configuration directives.
+    ///
+    /// [`ngx_command_t`]: https://nginx.org/en/docs/dev/development_guide.html#config_directives
+    pub const fn empty() -> Self {
+        Self {
+            name: ngx_str_t::empty(),
+            type_: 0,
+            set: None,
+            conf: 0,
+            offset: 0,
+            post: ptr::null_mut(),
+        }
+    }
+}
+
 impl ngx_module_t {
     /// Create a new `ngx_module_t` instance with default values.
     pub const fn default() -> Self {

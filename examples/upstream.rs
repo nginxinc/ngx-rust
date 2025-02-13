@@ -23,10 +23,7 @@ use ngx::http::{
     ngx_http_conf_get_module_srv_conf, ngx_http_conf_upstream_srv_conf_immutable,
     ngx_http_conf_upstream_srv_conf_mutable, HTTPModule, Merge, MergeConfigError, Request,
 };
-use ngx::{
-    http_upstream_init_peer_pt, ngx_conf_log_error, ngx_log_debug_http, ngx_log_debug_mask, ngx_null_command,
-    ngx_string,
-};
+use ngx::{http_upstream_init_peer_pt, ngx_conf_log_error, ngx_log_debug_http, ngx_log_debug_mask, ngx_string};
 
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
@@ -97,7 +94,7 @@ static mut NGX_HTTP_UPSTREAM_CUSTOM_COMMANDS: [ngx_command_t; 2] = [
         offset: 0,
         post: std::ptr::null_mut(),
     },
-    ngx_null_command!(),
+    ngx_command_t::empty(),
 ];
 
 // Generate the `ngx_modules` table with exported modules.
